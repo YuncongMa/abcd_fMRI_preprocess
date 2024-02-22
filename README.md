@@ -19,11 +19,16 @@ conda install -c conda-forge dcm2bids
 conda install -c conda-forge dcm2niix
 ```
 
-## ABCD Preprocessing
-### raw data to BIDS format
+## Preprocessing Steps
+### 1. Raw data to BIDS format
 ```
 python abcd_dcm2bids_yuncong.py
 ```
+### 2. fmriprep
+
+### 3. XCP-D
+
+### 4. Quality control
 
 ## Other Tools Included
 ABCD-Study: abcd-dicom2bids https://github.com/ABCD-STUDY/abcd-dicom2bids/tree/master
