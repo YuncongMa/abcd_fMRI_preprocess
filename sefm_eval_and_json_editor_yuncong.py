@@ -1,12 +1,12 @@
 #! /usr/bin/env python3
-# Yuncong Ma, 2/20/2024
+# Yuncong Ma, 2/22/2024
 # remove matlab functions from the original sefm_eval_and_json_editor.py
 
 import os, sys, glob, argparse, subprocess, socket, operator, shutil, json
 from bids import BIDSLayout
 from itertools import product
 import numpy as np
-import nilearn
+import nibabel as nib
 
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
 
@@ -74,7 +74,6 @@ def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
 
     print("Pairing for subject " + subject + ": " + subject + ", " + sessions)
     pos_func_fmaps = layout.get(subject=subject, session=sessions, datatype='fmap', suffix=pos, extension='.nii.gz')
-    print(pos_func_fmaps)
     neg_func_fmaps = layout.get(subject=subject, session=sessions, datatype='fmap', suffix=neg, extension='.nii.gz')
     list_pos = [os.path.join(x.dirname, x.filename) for x in pos_func_fmaps]
     list_neg = [os.path.join(y.dirname, y.filename) for y in neg_func_fmaps]
@@ -135,7 +134,11 @@ def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
             # print(image + " eta value = " + str(eta))
 
             # use numpy to do the computation instead
-            eta = np.random.random(1)
+            print(os.path.join(temp_dir, pedir + '_mean.nii.gz'))
+            Reference_Image = nib.load(os.path.join(temp_dir, pedir + '_mean.nii.gz')).get_fdata()
+            fmap_Image = nib.load(os.path.join(temp_dir, 'init_' + pedir + '_reg_' + str(i) + '.nii.gz')).get_fdata()
+            eta = eta_squared(Reference_Image, fmap_Image)
+            print(eta)
             # collect eta
             eta_list.append(eta)
         # instead of finding the average between eta values between pairs. Take the pair with the highest lowest eta value.
@@ -164,17 +167,34 @@ def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
             insert_edit_json(neg_json, "IntendedFor", [])
     
     # Delete the temp directory containing all the intermediate images
-    # if not debug:
-    #     rm_cmd = ['rm', '-rf', temp_dir]
-    #     subprocess.run(rm_cmd, env=os.environ)
+    if not debug:
+        rm_cmd = ['rm', '-rf', temp_dir]
+        subprocess.run(rm_cmd, env=os.environ)
     
     print("Success! Best SEFM pair has been chosen and linked in " + subject + "'s nifti directory.")
     
     return best_pos, best_neg
 
 
+def eta_squared(X, Y):
+    # Compute the mean of each image
+    mean_X = np.mean(X)
+    mean_Y = np.mean(Y)
+
+    # Compute the sum of squares for the differences between X and Y
+    SS_diff = np.sum((X - Y) ** 2)
+
+    # Compute the total sum of squares
+    SS_total = np.sum((X - mean_X) ** 2) + np.sum((Y - mean_Y) ** 2)
+
+    # Compute eta squared
+    eta_squared = SS_diff / SS_total
+
+    return eta_squared
+
+
 def seperate_concatenated_fm(bids_layout, subject, session, fsl_dir, debug=False):
-    fmap = bids_layout.get(subject=subject, session=session, datatype='fmap', acquisition='func', direction='both', extension='.nii.gz')
+    fmap = bids_layout.get(subject=subject, session=session, datatype='fmap', extension='.nii.gz')
     # use the first functional image as the reference for the nifti header after fslswapdim
     func_ref_fn = bids_layout.get(subject=subject, session=session, datatype='func', extension='.nii.gz')[0].filename
     func_ref_dir = bids_layout.get(subject=subject, session=session, datatype='func', extension='.nii.gz')[0].dirname
@@ -215,11 +235,11 @@ def seperate_concatenated_fm(bids_layout, subject, session, fsl_dir, debug=False
         # add required fields to the orig json as well
         insert_edit_json(orig_json, 'IntendedFor', [])
 
-    #if not debug:
+    # if not debug:
     #    rm_cmd = ['rm', '-rf', os.path.join(FM_dir, "vol*")]
     #    subprocess.run(rm_cmd, env=os.environ)
-    #    rm_cmd = ['rm', '-rf', os.path.join()]
-    #    subprocess.run(rm_cmd, env=os.environ)
+       # rm_cmd = ['rm', '-rf', os.path.join()]
+       # subprocess.run(rm_cmd, env=os.environ)
    
     return
 
@@ -361,11 +381,11 @@ def main(argv=sys.argv):
     for subject, sessions in subsess:
         print(subject+' : '+sessions)
         # Check if fieldmaps are concatenated
-        if layout.get(subject=subject, session=sessions, datatype='fmap', extension='.nii.gz'):
-            print("Func fieldmaps are concatenated. Running seperate_concatenate_fm")
-            seperate_concatenated_fm(layout, subject, sessions, fsl_dir)
-            # recreate layout with the additional SEFMS
-            layout = BIDSLayout(args.bids_dir, is_derivative=True)
+        # if layout.get(subject=subject, session=sessions, datatype='fmap', extension='.nii.gz'):
+        #     print("Func fieldmaps are concatenated. Running seperate_concatenate_fm")
+        #     seperate_concatenated_fm(layout, subject, sessions, fsl_dir)
+        #     # recreate layout with the additional SEFMS
+        #     layout = BIDSLayout(args.bids_dir, is_derivative=True)
 
         fmap = layout.get(subject=subject, session=sessions, datatype='fmap', extension='.nii.gz')
         # Check if there are func fieldmaps and return a list of each SEFM pos/neg pair

@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Yuncong Ma, 2/21/2024
+# Yuncong Ma, 2/22/2024
 # This bash file does NOT process Dti or task data
 # Corrected directories and settings
 
@@ -28,6 +28,7 @@ ROOT_BIDSINPUT=$5
 ScratchSpaceDir=$6
 
 DIR_PYTHON_YM=$7 # directory of yuncong's Python code for abcd
+list_sub_scan=$8
 
 participant=`echo ${SUB} | sed 's|sub-||'`
 session=`echo ${VISIT} | sed 's|ses-||'`
@@ -51,7 +52,15 @@ mkdir -p ${TempSubjectDir}
 
 # copy all tgz to the scratch space dir
 echo `date`" :COPYING TGZs TO SCRATCH: ${TempSubjectDir}"
-cp ${TGZDIR}/* ${TempSubjectDir}
+#cp ${TGZDIR}/* ${TempSubjectDir}
+while IFS= read -r line; do
+    # Remove leading and trailing whitespace
+    line=$(echo "$line" | xargs)
+    # Copy the file to the destination directory
+    cp "$line" "$TempSubjectDir"
+done < "$list_sub_scan"
+
+
 
 # unpack tgz to ABCD_DCMs directory
 mkdir ${TempSubjectDir}/DCMs
@@ -145,11 +154,11 @@ if [[ -e ${TempSubjectDir}/BIDS_unprocessed/${SUB}/${VISIT}/func ]]; then
 fi
 
 # select best fieldmap and update sidecar jsons
-#echo `date`" :RUNNING SEFM SELECTION AND EDITING SIDECAR JSONS"
-#if [ -d ${TempSubjectDir}/BIDS_unprocessed/${SUB}/${VISIT}/fmap ]; then
-#    ${ABCD2BIDS_DIR}/sefm_eval_and_json_editor_yuncong.py ${TempSubjectDir}/BIDS_unprocessed ${FSL_DIR} --participant-label=${participant} --output_dir $ROOT_BIDSINPUT
-#fi
-#
+echo `date`" :RUNNING SEFM SELECTION AND EDITING SIDECAR JSONS"
+if [ -d ${TempSubjectDir}/BIDS_unprocessed/${SUB}/${VISIT}/fmap ]; then
+    ${DIR_PYTHON_YM}/sefm_eval_and_json_editor_yuncong.py ${TempSubjectDir}/BIDS_unprocessed ${FSL_DIR} --participant-label=${participant} --output_dir $ROOT_BIDSINPUT
+fi
+
 #rm ${TempSubjectDir}/BIDS_unprocessed/${SUB}/${VISIT}/fmap/*dir-both* 2> /dev/null || true
 
 
@@ -219,5 +228,8 @@ if [ -d ${TEMPSRCDATA} ] ; then
     mkdir -p ${ROOT_SRCDATA}
     cp -r ${TEMPSRCDATA} ${ROOT_SRCDATA}/
 fi
+
+echo "remove all temporary files"
+rm -rf "${ScratchSpaceDir}"
 
 echo `date`" :UNPACKING AND SETUP COMPLETE: ${SUB}/${VISIT}"
