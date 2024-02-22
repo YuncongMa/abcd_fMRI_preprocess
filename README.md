@@ -1,5 +1,5 @@
 # abcd_fMRI_preprocess
-A customizable pipeline to preprocess fMRI data in ABCD dataset, based on abcd-dicom2bids (https://github.com/ABCD-STUDY/abcd-dicom2bids/tree/master), fmriprep(https://github.com/nipreps/fmriprep), and XCP-D (https://github.com/PennLINC/xcp_d)
+A customizable pipeline to preprocess fMRI data in ABCD dataset, based on abcd-dicom2bids (https://github.com/ABCD-STUDY/abcd-dicom2bids/tree/master), fmriprep (https://github.com/nipreps/fmriprep), and XCP-D (https://github.com/PennLINC/xcp_d)
 
 ## Installation
 1. Download this package
