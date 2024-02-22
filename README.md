@@ -17,7 +17,7 @@ conda create --name abcd python=3.8
 conda activate abcd
 ```
 
-5. Install additional packages
+4. Install additional packages
 ```
 pip install numpy bids nibabel
 conda install -c conda-forge dcm2bids
