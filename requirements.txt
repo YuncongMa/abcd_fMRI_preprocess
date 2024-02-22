@@ -1,0 +1,1 @@
+dcm2bids @ file:///home/conda/feedstock_root/build_artifacts/dcm2bids_1697142820009/work
