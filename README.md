@@ -1,5 +1,5 @@
-# abcd_fMRI_process
-A pipeline to process fMRI data in ABCD dataset
+# abcd_fMRI_preprocess
+A pipeline to preprocess fMRI data in ABCD dataset, based on abcd-dicom2bids (https://github.com/ABCD-STUDY/abcd-dicom2bids/tree/master), fmriprep(https://github.com/nipreps/fmriprep), and XCP-D (https://github.com/PennLINC/xcp_d)
 
 ## Installation
 1. Download this package
@@ -36,4 +36,9 @@ python abcd_dcm2bids_yuncong.py
 ### 4. Quality control
 
 ## Other Tools Included
-ABCD-Study: abcd-dicom2bids https://github.com/ABCD-STUDY/abcd-dicom2bids/tree/master
+### abcd-dicom2bids 
+https://github.com/ABCD-STUDY/abcd-dicom2bids/tree/master
+### fmriprep 
+https://github.com/nipreps/fmriprep
+### XCP-D 
+https://github.com/PennLINC/xcp_d
