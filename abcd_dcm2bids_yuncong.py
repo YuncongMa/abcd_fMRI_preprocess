@@ -1,4 +1,4 @@
-# Yuncong Ma, 2/21/2024
+# Yuncong Ma, 2/22/2024
 # Unpack tgz files and convert them into NII format
 # Rename files
 # This code is adapted from abcd-dicom2bids/src/unpack_and_setup.sh
@@ -12,6 +12,7 @@ import sys
 import subprocess
 import numpy as np
 import bids
+import shutil
 
 # ========== directories
 # directories of data
