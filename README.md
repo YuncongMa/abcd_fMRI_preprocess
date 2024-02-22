@@ -9,10 +9,15 @@ clone https://github.com/YuncongMa/abcd_fMRI_process.git
 
 2. Create Conda environment
 ```
-conda env create --name abcd
+conda create --name abcd python=3.8
 ```
 
-4. Install additional packages
+3. Activate Conda environment
+```
+conda activate abcd
+```
+
+5. Install additional packages
 ```
 pip install numpy bids nibabel
 conda install -c conda-forge dcm2bids
