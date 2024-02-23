@@ -1,4 +1,4 @@
-# Yuncong Ma, 2/22/2024
+# Yuncong Ma, 2/23/2024
 # Unpack tgz files and convert them into NII format
 # Rename files
 # This code is adapted from abcd-dicom2bids/src/unpack_and_setup.sh
@@ -40,7 +40,7 @@ if not os.path.exists(dir_temp):
     os.makedirs(dir_temp)
 
 # copy BIDS description file
-shutil.copyfile(os.path.join(dir_abcd_yuncong, 'dataset_description.json'), os.path.join(dir_bids, 'dataset_description.json'))
+shutil.copyfile(os.path.join(dir_abcd_fmri_preprocess, 'dataset_description.json'), os.path.join(dir_bids, 'dataset_description.json'))
 
 # extract information of tgz files, subject and session
 list_file = []
@@ -132,10 +132,6 @@ for _, subject in enumerate(subject_unique):
     #                 dir_fsl,
     #                 dir_abcd_yuncong
     #                 ])
-
-# check bids
-# BIDS = bids.BIDSLayout(dir_bids, is_derivative=True)
-# print(BIDS.get(subject='NDARINV003RTV85', session='baselineYear1Arm1', datatype='fmap', suffix='AP', extension='.nii.gz'))
 
 
 

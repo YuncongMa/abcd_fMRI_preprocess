@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
-# Yuncong Ma, 2/22/2024
-# remove matlab functions from the original sefm_eval_and_json_editor.py
+# Yuncong Ma, 2/23/2024
+# use numpy function to replace the matlab for eta squared from the original sefm_eval_and_json_editor.py
+# change suffix from AP to dir-AP_epi
 
 import os, sys, glob, argparse, subprocess, socket, operator, shutil, json
 from bids import BIDSLayout
@@ -57,8 +58,8 @@ def read_bids_layout(layout, subject_list=None, collect_on_subject=False):
 
 def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
                 debug=False):
-    pos = 'PA'
-    neg = 'AP'
+    pos = 'dir-PA_epi'
+    neg = 'dir-AP_epi'
 
     # Add trailing slash to fsl_dir variable if it's not present
     if fsl_dir[-1] != "/":
