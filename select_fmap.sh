@@ -30,7 +30,8 @@ session=`echo ${VISIT} | sed 's|ses-||'`
 TempSubjectDir=${ScratchSpaceDir}
 
 # select best fieldmap and update sidecar jsons
-echo `date`" :RUNNING SEFM SELECTION AND EDITING SIDECAR JSONS"
+echo ${TempSubjectDir}/BIDS_unprocessed/${SUB}/${VISIT}/fmap
 if [ -d ${TempSubjectDir}/BIDS_unprocessed/${SUB}/${VISIT}/fmap ]; then
+    echo `date`" :RUNNING SEFM SELECTION AND EDITING SIDECAR JSONS"
     ${DIR_PYTHON_YM}/sefm_eval_and_json_editor_yuncong.py ${TempSubjectDir}/BIDS_unprocessed ${FSL_DIR} --participant-label=${participant} --output_dir $ROOT_BIDSINPUT
 fi

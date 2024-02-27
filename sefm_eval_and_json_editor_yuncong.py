@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
-# Yuncong Ma, 2/23/2024
-# use numpy function to replace the matlab for eta squared from the original sefm_eval_and_json_editor.py
-# change suffix from AP to dir-AP_epi
+# Yuncong Ma, 2/22/2024
+# remove matlab functions from the original sefm_eval_and_json_editor.py
 
 import os, sys, glob, argparse, subprocess, socket, operator, shutil, json
 from bids import BIDSLayout
@@ -58,8 +57,8 @@ def read_bids_layout(layout, subject_list=None, collect_on_subject=False):
 
 def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
                 debug=False):
-    pos = 'dir-PA_epi'
-    neg = 'dir-AP_epi'
+    pos = 'PA'
+    neg = 'AP'
 
     # Add trailing slash to fsl_dir variable if it's not present
     if fsl_dir[-1] != "/":
@@ -74,8 +73,8 @@ def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
         pass
 
     print("Pairing for subject " + subject + ": " + subject + ", " + sessions)
-    pos_func_fmaps = layout.get(subject=subject, session=sessions, datatype='fmap', suffix=pos, extension='.nii.gz')
-    neg_func_fmaps = layout.get(subject=subject, session=sessions, datatype='fmap', suffix=neg, extension='.nii.gz')
+    pos_func_fmaps = layout.get(subject=subject, session=sessions, datatype='fmap', direction=pos, extension='.nii.gz')
+    neg_func_fmaps = layout.get(subject=subject, session=sessions, datatype='fmap', direction=neg, extension='.nii.gz')
     list_pos = [os.path.join(x.dirname, x.filename) for x in pos_func_fmaps]
     list_neg = [os.path.join(y.dirname, y.filename) for y in neg_func_fmaps]
 
@@ -145,9 +144,12 @@ def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
         # instead of finding the average between eta values between pairs. Take the pair with the highest lowest eta value.
         min_eta = min(eta_list)
         min_eta_dict[pair] = min_eta
+    print(min_eta_dict)
     best_pos, best_neg = max(min_eta_dict, key=min_eta_dict.get)
+    print('\nFound best pair of field maps')
     print(best_pos)
     print(best_neg)
+    print('\n')
 
     # Add metadata
     func_list = [os.path.join(x.dirname, x.filename) for x in layout.get(subject=subject, session=sessions, datatype='func', extension='.nii.gz')]
@@ -171,6 +173,8 @@ def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
     if not debug:
         rm_cmd = ['rm', '-rf', temp_dir]
         subprocess.run(rm_cmd, env=os.environ)
+        # rm_cmd = ['rm', '-r', temp_dir]
+        # subprocess.run(rm_cmd, env=os.environ)
     
     print("Success! Best SEFM pair has been chosen and linked in " + subject + "'s nifti directory.")
     
@@ -218,8 +222,9 @@ def seperate_concatenated_fm(bids_layout, subject, session, fsl_dir, debug=False
         # Change by Greg 2019-06-10: Replaced hardcoded Exacloud path to
         # FSL_identity_transformation_matrix with relative path to that
         # file in the pwd
-        AP_flirt = [fsl_dir + "/flirt", "-out", AP_fn, "-in", AP_fn, "-ref", func_ref, "-applyxfm", "-init", os.path.join(ETA_DIR, "FSL_identity_transformation_matrix.mat"), "-interp", "spline"]
-        PA_flirt = [fsl_dir + "/flirt", "-out", PA_fn, "-in", PA_fn, "-ref", func_ref, "-applyxfm", "-init", os.path.join(ETA_DIR, "FSL_identity_transformation_matrix.mat"), "-interp", "spline"]
+        dir_fsl_matrix = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+        AP_flirt = [fsl_dir + "/flirt", "-out", AP_fn, "-in", AP_fn, "-ref", func_ref, "-applyxfm", "-init", os.path.join(dir_fsl_matrix, "FSL_identity_transformation_matrix.mat"), "-interp", "spline"]
+        PA_flirt = [fsl_dir + "/flirt", "-out", PA_fn, "-in", PA_fn, "-ref", func_ref, "-applyxfm", "-init", os.path.join(dir_fsl_matrix, "FSL_identity_transformation_matrix.mat"), "-interp", "spline"]
 
         subprocess.run(AP_flirt, env=os.environ)
         subprocess.run(PA_flirt, env=os.environ)
@@ -236,9 +241,9 @@ def seperate_concatenated_fm(bids_layout, subject, session, fsl_dir, debug=False
         # add required fields to the orig json as well
         insert_edit_json(orig_json, 'IntendedFor', [])
 
-    # if not debug:
-    #    rm_cmd = ['rm', '-rf', os.path.join(FM_dir, "vol*")]
-    #    subprocess.run(rm_cmd, env=os.environ)
+    if not debug:
+       rm_cmd = ['rm', '-rf', os.path.join(FM_dir, "vol*")]
+       subprocess.run(rm_cmd, env=os.environ)
        # rm_cmd = ['rm', '-rf', os.path.join()]
        # subprocess.run(rm_cmd, env=os.environ)
    
@@ -369,6 +374,8 @@ def main(argv=sys.argv):
     parser = generate_parser()
     args = parser.parse_args()
 
+    print('Start sefm eval and selection')
+
     # Set environment variables for FSL dir based on CLI
     os.environ['FSL_DIR'] = args.fsl_dir
     os.environ['FSLDIR'] = args.fsl_dir
@@ -382,11 +389,14 @@ def main(argv=sys.argv):
     for subject, sessions in subsess:
         print(subject+' : '+sessions)
         # Check if fieldmaps are concatenated
-        # if layout.get(subject=subject, session=sessions, datatype='fmap', extension='.nii.gz'):
-        #     print("Func fieldmaps are concatenated. Running seperate_concatenate_fm")
-        #     seperate_concatenated_fm(layout, subject, sessions, fsl_dir)
-        #     # recreate layout with the additional SEFMS
-        #     layout = BIDSLayout(args.bids_dir, is_derivative=True)
+        count_fmap_AP = len(layout.get(subject=subject, session=sessions, datatype='fmap', direction='AP', extension='.nii.gz'))
+        count_fmap_PA = len(layout.get(subject=subject, session=sessions, datatype='fmap', direction='PA', extension='.nii.gz'))
+        count_fmap_both = len(layout.get(subject=subject, session=sessions, datatype='fmap', direction='both', extension='.nii.gz'))
+        if count_fmap_AP == 0 and count_fmap_PA == 0 and count_fmap_both > 0:
+            print("Func fieldmaps are concatenated. Running seperate_concatenate_fm")
+            seperate_concatenated_fm(layout, subject, sessions, fsl_dir)
+            # recreate layout with the additional SEFMS
+            layout = BIDSLayout(args.bids_dir, is_derivative=True)
 
         fmap = layout.get(subject=subject, session=sessions, datatype='fmap', extension='.nii.gz')
         # Check if there are func fieldmaps and return a list of each SEFM pos/neg pair

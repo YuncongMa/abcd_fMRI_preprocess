@@ -9,13 +9,8 @@
 # This code does NOT work for DTI data
 
 # packages
-import os
-import re
-import sys
-import subprocess
 import numpy as np
-import bids
-import shutil
+import shutil, glob, subprocess, sys, re, os
 
 # directories
 dir_abcd_test = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -107,16 +102,16 @@ for _, subject in enumerate(subject_unique):
             print(list_file[i], file=list_sub_scan)
     list_sub_scan.close()
     list_sub_scan = list_sub_scan.name
-    subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'unpack_and_setup_yuncong.sh'),
-                    subject,
-                    SESSION,
-                    dir_raw_data,
-                    dir_abcd2bids,
-                    dir_bids,
-                    dir_temp_sub,
-                    dir_abcd_fmri_preprocess,
-                    list_sub_scan
-                    ])
+    # subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'unpack_and_setup_yuncong.sh'),
+    #                 subject,
+    #                 SESSION,
+    #                 dir_raw_data,
+    #                 dir_abcd2bids,
+    #                 dir_bids,
+    #                 dir_temp_sub,
+    #                 dir_abcd_fmri_preprocess,
+    #                 list_sub_scan
+    #                 ])
 
     # # select the best field map
     # subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'select_fmap.sh'),
@@ -129,4 +124,34 @@ for _, subject in enumerate(subject_unique):
     #                 dir_fsl,
     #                 dir_abcd_yuncong
     #                 ])
+
+
+# adapted from correct_jsons.py in abcd-dicom2bids
+def correct_jsons(CORRECT_JSONS, dir_output):
+    """
+    Correct ABCD BIDS input data to conform to official BIDS Validator.
+    """
+    subprocess.check_call((CORRECT_JSONS, dir_output))
+
+    # Remove the .json files added to each subject's output directory by
+    # sefm_eval_and_json_editor.py, and the vol*.nii.gz files
+    sub_dirs = os.path.join(dir_output, "sub*")
+    flag_correction = 0
+    for json_path in glob.iglob(os.path.join(sub_dirs, "*.json")):
+        print("Removing .JSON file: {}".format(json_path))
+        os.remove(json_path)
+        flag_correction += 1
+    for vol_file in glob.iglob(os.path.join(sub_dirs, "ses*",
+                          "fmap", "vol*.nii.gz")):
+        print("Removing 'vol' file: {}".format(vol_file))
+        os.remove(vol_file)
+        flag_correction += 1
+
+    if flag_correction > 0:
+        print('\n'+str(flag_correction)+' corrections were performed for json files.\n')
+    else:
+        print('\nNo correction is needed for all the json files.\n')
+
+
+correct_jsons(os.path.join(dir_abcd2bids, 'src', 'correct_jsons.py'), dir_bids)
 

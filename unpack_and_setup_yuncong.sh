@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Yuncong Ma, 2/22/2024
+# Yuncong Ma, 2/26/2024
 # This bash file does NOT process Dti or task data
 # Corrected directories and settings
 
@@ -86,7 +86,7 @@ mkdir ${TempSubjectDir}/BIDS_unprocessed
 cp ${DIR_PYTHON_YM}/dataset_description.json ${TempSubjectDir}/BIDS_unprocessed/
 echo ${participant}
 echo `date`" :RUNNING dcm2bids"
-dcm2bids -d ${TempSubjectDir}/DCMs/${SUB} -p ${participant} -s ${session} -c ${DIR_PYTHON_YM}/abcd_dcm2bids.conf -o ${TempSubjectDir}/BIDS_unprocessed --force_dcm2bids --clobber --bids_validate
+dcm2bids -d ${TempSubjectDir}/DCMs/${SUB} -p ${participant} -s ${session} -c ${DIR_PYTHON_YM}/abcd_dcm2bids.conf -o ${TempSubjectDir}/BIDS_unprocessed --force_dcm2bids --clobber
 
 
 ## replace bvals and bvecs with files supplied by the NDA
