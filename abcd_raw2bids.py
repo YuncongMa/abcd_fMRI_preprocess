@@ -19,7 +19,7 @@ import shutil
 
 # directories
 dir_abcd_test = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-dir_abcd_yuncong = os.path.join(dir_abcd_test, 'Python')
+dir_abcd_fmri_preprocess = os.path.join(dir_abcd_test, 'Python')
 dir_abcd2bids = os.path.join(dir_abcd_test, 'Python', 'abcd-dicom2bids-master')
 dir_raw_data = os.path.join(dir_abcd_test, 'Example_Data')
 dir_temp = os.path.join(dir_abcd_test, 'Temp')
@@ -37,7 +37,7 @@ if not os.path.exists(dir_temp):
     os.makedirs(dir_temp)
 
 # copy BIDS description file
-shutil.copyfile(os.path.join(dir_abcd_yuncong, 'dataset_description.json'), os.path.join(dir_bids, 'dataset_description.json'))
+shutil.copyfile(os.path.join(dir_abcd_fmri_preprocess, 'dataset_description.json'), os.path.join(dir_bids, 'dataset_description.json'))
 
 # extract information of tgz files, subject and session
 list_file = []
@@ -98,7 +98,7 @@ for _, subject in enumerate(subject_unique):
     if not os.path.exists(dir_temp_sub):
         os.makedirs(dir_temp_sub)
     # only copy anat and rsfMRI data
-    Keywords = ['ABCD-T1', 'ABCD-T2', 'ABCD-fMRI', 'ABCD-rsfMRI']
+    Keywords = ['ABCD-T1', 'ABCD-T2', 'FM', 'ABCD-rsfMRI']
     # generate a scan file
     list_sub_scan = os.path.join(dir_temp_sub, 'List_Scan.txt')
     list_sub_scan = open(list_sub_scan, 'w')
@@ -107,32 +107,26 @@ for _, subject in enumerate(subject_unique):
             print(list_file[i], file=list_sub_scan)
     list_sub_scan.close()
     list_sub_scan = list_sub_scan.name
-    subprocess.run(['bash', os.path.join(dir_abcd_yuncong, 'unpack_and_setup_yuncong.sh'),
+    subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'unpack_and_setup_yuncong.sh'),
                     subject,
                     SESSION,
                     dir_raw_data,
                     dir_abcd2bids,
                     dir_bids,
                     dir_temp_sub,
-                    dir_abcd_yuncong,
+                    dir_abcd_fmri_preprocess,
                     list_sub_scan
                     ])
 
     # # select the best field map
-    # subprocess.run(['bash', os.path.join(dir_abcd_yuncong, 'select_fmap.sh'),
+    # subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'select_fmap.sh'),
     #                 subject,
     #                 SESSION,
     #                 dir_raw_data,
     #                 dir_abcd2bids,
     #                 dir_bids,
-    #                 dir_temp,
+    #                 dir_temp_sub,
     #                 dir_fsl,
     #                 dir_abcd_yuncong
     #                 ])
-
-# check bids
-# BIDS = bids.BIDSLayout(dir_bids, is_derivative=True)
-# print(BIDS.get(subject='NDARINV003RTV85', session='baselineYear1Arm1', datatype='fmap', suffix='AP', extension='.nii.gz'))
-
-
 
