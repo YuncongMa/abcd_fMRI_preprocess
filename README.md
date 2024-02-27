@@ -27,7 +27,7 @@ conda install -c conda-forge dcm2niix
 ## Preprocessing Steps
 ### 1. Raw data to BIDS format
 ```
-python abcd_dcm2bids_yuncong.py
+python abcd_raw2bids.py
 ```
 ### 2. fmriprep
 
