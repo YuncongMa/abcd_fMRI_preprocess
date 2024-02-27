@@ -22,6 +22,7 @@ conda activate abcd
 pip install numpy bids nibabel
 conda install -c conda-forge dcm2bids
 conda install -c conda-forge dcm2niix
+conda install -c conda-forge dcmtk
 ```
 
 ## Preprocessing Steps
