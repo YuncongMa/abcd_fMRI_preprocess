@@ -21,9 +21,10 @@ def check_for_RawDataStorage(dcm_dir):
         print("%s valid" % os.path.join(dcm_dir, dcm1))
         return
     else:
-        print("ERROR: dcmdump output not recognized from cmd: %s" % " ".join(dum_cmd))
+        print("ERROR: dcmdump output not recognized from cmd: %s" % " ".join(dump_cmd))
 
     return
+
 
 def rm_RawData_dcms(dcm_dir, dcm1):
     # Identify number of temporal positions (0020,0105) and number of slices per time point (should be 60)
