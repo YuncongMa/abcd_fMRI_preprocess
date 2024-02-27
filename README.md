@@ -20,9 +20,7 @@ conda activate abcd
 4. Install additional packages
 ```
 pip install numpy bids nibabel
-conda install -c conda-forge dcm2bids
-conda install -c conda-forge dcm2niix
-conda install -c conda-forge dcmtk
+conda install -c conda-forge dcm2bids, dcm2niix, dcmtk
 ```
 For Apple Silicon, use the homebrew to install dcmtk
 ```
