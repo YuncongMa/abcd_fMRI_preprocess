@@ -24,6 +24,10 @@ conda install -c conda-forge dcm2bids
 conda install -c conda-forge dcm2niix
 conda install -c conda-forge dcmtk
 ```
+For Apple Silicon, use the homebrew to install dcmtk
+```
+brew install dcmtk
+```
 
 ## Preprocessing Steps
 ### 1. Raw data to BIDS format
