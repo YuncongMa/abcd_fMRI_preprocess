@@ -1,4 +1,4 @@
-# Yuncong Ma, 2/26/2024
+# Yuncong Ma, 2/29/2024
 # ABCD raw data to BIDS format
 # Unpack tgz files and convert them into NII format
 # Rename files
@@ -9,8 +9,11 @@
 # This code does NOT work for DTI data
 
 # packages
+import glob
+import os
+import shutil
+import subprocess
 import numpy as np
-import shutil, glob, subprocess, sys, re, os
 
 # directories
 dir_abcd_test = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -20,7 +23,7 @@ dir_raw_data = os.path.join(dir_abcd_test, 'Example_Data')
 dir_temp = os.path.join(dir_abcd_test, 'Temp')
 dir_dcm = os.path.join(dir_abcd_test, 'DCM')
 dir_bids = os.path.join(dir_abcd_test, 'BIDS')
-dir_fsl = '/usr/local/fsl'
+# dir_fsl = '/usr/local/fsl'
 
 # clean out and create the DCM folder
 # if not os.path.exists(dir_dcm):
@@ -84,7 +87,9 @@ def keyword_in_string(keywords, text):
 
 
 # process for each subject and each session
+# prepare files
 for _, subject in enumerate(subject_unique):
+
     indexes = [index for index, value in enumerate(list_sub) if value == subject]
     SESSION = list_session[indexes[0]]
 
@@ -101,28 +106,36 @@ for _, subject in enumerate(subject_unique):
         if keyword_in_string(Keywords, list_file[i]):
             print(list_file[i], file=list_sub_scan)
     list_sub_scan.close()
-    list_sub_scan = list_sub_scan.name
-    # subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'unpack_and_setup_yuncong.sh'),
-    #                 subject,
-    #                 SESSION,
-    #                 dir_raw_data,
-    #                 dir_abcd2bids,
-    #                 dir_bids,
-    #                 dir_temp_sub,
-    #                 dir_abcd_fmri_preprocess,
-    #                 list_sub_scan
-    #                 ])
 
-    # # select the best field map
-    # subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'select_fmap.sh'),
+# run process
+for _, subject in enumerate(subject_unique):
+    # only test on selected subjects
+    if subject not in ['sub-NDARINV005V6D2C']:
+        continue
+    dir_temp_sub = os.path.join(dir_temp, subject+'_'+SESSION)
+    list_sub_scan = os.path.join(dir_temp_sub, 'List_Scan.txt')
+    indexes = [index for index, value in enumerate(list_sub) if value == subject]
+    SESSION = list_session[indexes[0]]
+
+    # convert raw data to bids format
+    subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'unpack_and_setup_yuncong.sh'),
+                    subject,
+                    SESSION,
+                    dir_raw_data,
+                    dir_abcd2bids,
+                    dir_bids,
+                    dir_temp_sub,
+                    dir_abcd_fmri_preprocess,
+                    list_sub_scan
+                    ])
+
+    # generate qc for bids results
+    # check whether PhaseEncodingDirection in fMRI map is correct, by comparing to the field map with the same direction
+    # subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'submit_qc_bids.sh'),
     #                 subject,
     #                 SESSION,
-    #                 dir_raw_data,
-    #                 dir_abcd2bids,
     #                 dir_bids,
-    #                 dir_temp_sub,
-    #                 dir_fsl,
-    #                 dir_abcd_yuncong
+    #                 dir_abcd_fmri_preprocess
     #                 ])
 
 
@@ -136,22 +149,15 @@ def correct_jsons(CORRECT_JSONS, dir_output):
     # Remove the .json files added to each subject's output directory by
     # sefm_eval_and_json_editor.py, and the vol*.nii.gz files
     sub_dirs = os.path.join(dir_output, "sub*")
-    flag_correction = 0
     for json_path in glob.iglob(os.path.join(sub_dirs, "*.json")):
         print("Removing .JSON file: {}".format(json_path))
         os.remove(json_path)
-        flag_correction += 1
     for vol_file in glob.iglob(os.path.join(sub_dirs, "ses*",
                           "fmap", "vol*.nii.gz")):
         print("Removing 'vol' file: {}".format(vol_file))
         os.remove(vol_file)
-        flag_correction += 1
-
-    if flag_correction > 0:
-        print('\n'+str(flag_correction)+' corrections were performed for json files.\n')
-    else:
-        print('\nNo correction is needed for all the json files.\n')
 
 
-correct_jsons(os.path.join(dir_abcd2bids, 'src', 'correct_jsons.py'), dir_bids)
+correct_jsons(os.path.join(dir_abcd_fmri_preprocess, 'correct_jsons.py'), dir_bids)
 
+print('raw2bids is done')

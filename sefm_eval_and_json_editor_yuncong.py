@@ -1,8 +1,8 @@
 #! /usr/bin/env python3
-# Yuncong Ma, 2/22/2024
+# Yuncong Ma, 3/4/2024
 # remove matlab functions from the original sefm_eval_and_json_editor.py
 
-import os, sys, glob, argparse, subprocess, socket, operator, shutil, json
+import os, sys, glob, argparse, subprocess, socket, operator, shutil, json, string, re
 from bids import BIDSLayout
 from itertools import product
 import numpy as np
@@ -55,7 +55,7 @@ def read_bids_layout(layout, subject_list=None, collect_on_subject=False):
     return subsess
 
 
-def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
+def sefm_select(dir_bids, layout, subject, sessions, base_temp_dir, fsl_dir,
                 debug=False):
     pos = 'PA'
     neg = 'AP'
@@ -152,8 +152,8 @@ def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
     print('\n')
 
     # Add metadata
-    func_list = [os.path.join(x.dirname, x.filename) for x in layout.get(subject=subject, session=sessions, datatype='func', extension='.nii.gz')]
-    anat_list = [os.path.join(x.dirname, x.filename) for x in layout.get(subject=subject, session=sessions, datatype='anat', extension='.nii.gz')]
+    func_list = [os.path.join(x.dirname, x.filename).replace(dir_bids, '.') for x in layout.get(subject=subject, session=sessions, datatype='func', extension='.nii.gz')]
+    anat_list = [os.path.join(x.dirname, x.filename).replace(dir_bids, '.') for x in layout.get(subject=subject, session=sessions, datatype='anat', extension='.nii.gz')]
     for pair in pairs:
         pos_nifti = pair[0]
         neg_nifti = pair[1]
@@ -244,8 +244,9 @@ def seperate_concatenated_fm(bids_layout, subject, session, fsl_dir, debug=False
     if not debug:
        rm_cmd = ['rm', '-rf', os.path.join(FM_dir, "vol*")]
        subprocess.run(rm_cmd, env=os.environ)
-       # rm_cmd = ['rm', '-rf', os.path.join()]
-       # subprocess.run(rm_cmd, env=os.environ)
+       # remove dir-both files which have issues with fmriprep
+       rm_cmd = ['rm', '-rf', os.path.join(FM_dir, "*dir-both*")]
+       subprocess.run(rm_cmd, env=os.environ)
    
     return
 
@@ -388,45 +389,13 @@ def main(argv=sys.argv):
 
     for subject, sessions in subsess:
         print(subject+' : '+sessions)
-        # Check if fieldmaps are concatenated
-        count_fmap_AP = len(layout.get(subject=subject, session=sessions, datatype='fmap', direction='AP', extension='.nii.gz'))
-        count_fmap_PA = len(layout.get(subject=subject, session=sessions, datatype='fmap', direction='PA', extension='.nii.gz'))
-        count_fmap_both = len(layout.get(subject=subject, session=sessions, datatype='fmap', direction='both', extension='.nii.gz'))
-        if count_fmap_AP == 0 and count_fmap_PA == 0 and count_fmap_both > 0:
-            print("Func fieldmaps are concatenated. Running seperate_concatenate_fm")
-            seperate_concatenated_fm(layout, subject, sessions, fsl_dir)
-            # recreate layout with the additional SEFMS
-            layout = BIDSLayout(args.bids_dir, is_derivative=True)
 
-        fmap = layout.get(subject=subject, session=sessions, datatype='fmap', extension='.nii.gz')
-        # Check if there are func fieldmaps and return a list of each SEFM pos/neg pair
-        if fmap:
-            print("Running SEFM select")
-            base_temp_dir = fmap[0].dirname
-            bes_pos, best_neg = sefm_select(layout, subject, sessions,
-                                            base_temp_dir, fsl_dir,
-                                            args.debug)
-            for sefm in [os.path.join(x.dirname, x.filename) for x in fmap]:
-                sefm_json = sefm.replace('.nii.gz', '.json')
-                sefm_metadata = layout.get_metadata(sefm)
-
-                if 'Philips' in sefm_metadata['Manufacturer']:
-                    insert_edit_json(sefm_json, 'EffectiveEchoSpacing', 0.00062771)
-                if 'GE' in sefm_metadata['Manufacturer']:
-                    insert_edit_json(sefm_json, 'EffectiveEchoSpacing', 0.000536)
-                if 'Siemens' in sefm_metadata['Manufacturer']:
-                    insert_edit_json(sefm_json, 'EffectiveEchoSpacing', 0.000510012)
-
-        # # Check if there are dwi fieldmaps and insert IntendedFor field accordingly
-        # if layout.get(subject=subject, session=sessions, datatype='fmap', extension='.nii.gz', acquisition='dwi'):
-        #     print("Editing DWI jsons")
-        #     edit_dwi_jsons(layout, subject, sessions)
-
+        print('Insert information to anat and func data')
         # Additional edits to the anat json sidecar
         anat = layout.get(subject=subject, session=sessions, datatype='anat', extension='.nii.gz')
         if anat:
             for TX in [os.path.join(x.dirname, x.filename) for x in anat]:
-                TX_json = TX.replace('.nii.gz', '.json') 
+                TX_json = TX.replace('.nii.gz', '.json')
                 TX_metadata = layout.get_metadata(TX)
                     #if 'T1' in TX_metadata['SeriesDescription']:
 
@@ -436,9 +405,8 @@ def main(argv=sys.argv):
                     insert_edit_json(TX_json, 'DwellTime', 0.000536)
                 if 'Siemens' in TX_metadata['Manufacturer']:
                     insert_edit_json(TX_json, 'DwellTime', 0.000510012)
-        
-        # add EffectiveEchoSpacing if it doesn't already exist
 
+        # add EffectiveEchoSpacing if it doesn't already exist
         # PE direction vs axis
         func = layout.get(subject=subject, session=sessions, datatype='func', extension='.nii.gz')
         if func:
@@ -451,11 +419,89 @@ def main(argv=sys.argv):
                     if 'DV26' in task_metadata['SoftwareVersions']:
                         insert_edit_json(task_json, 'EffectiveEchoSpacing', 0.000556)
                 if 'Siemens' in task_metadata['Manufacturer']:
-                    insert_edit_json(task_json, 'EffectiveEchoSpacing', 0.000510012)                
+                    insert_edit_json(task_json, 'EffectiveEchoSpacing', 0.000510012)
                 if "PhaseEncodingAxis" in task_metadata:
                     insert_edit_json(task_json, 'PhaseEncodingDirection', task_metadata['PhaseEncodingAxis'])
                 elif "PhaseEncodingDirection" in task_metadata:
                     insert_edit_json(task_json, 'PhaseEncodingAxis', task_metadata['PhaseEncodingDirection'].strip('-'))
+
+        print('start to edit field maps')
+        # Check if fieldmaps are concatenated
+        count_fmap_AP = len(layout.get(subject=subject, session=sessions, datatype='fmap', direction='AP', extension='.nii.gz'))
+        count_fmap_PA = len(layout.get(subject=subject, session=sessions, datatype='fmap', direction='PA', extension='.nii.gz'))
+        count_fmap_both = len(layout.get(subject=subject, session=sessions, datatype='fmap', direction='both', extension='.nii.gz'))
+        if count_fmap_AP == 0 and count_fmap_PA == 0 and count_fmap_both > 0:
+            # check whether FM maps only contain one volume
+            fmap_list = layout.get(subject=subject, session=sessions, datatype='fmap', direction='both', extension='.nii.gz')
+            fmap_ex = np.array(nib.load(os.path.join(fmap_list[0].dirname, fmap_list[0].filename)).get_fdata())
+            if fmap_ex.ndim == 3:
+                print('fmaps with name dir-both contain only one direction, start to rename fmaps')
+                # Pair AP and PA maps starting from 1
+                count_fmap_AP = 0
+                count_fmap_PA = 0
+                for k in range(count_fmap_both):
+                    with open(os.path.join(fmap_list[k].dirname, fmap_list[k].filename.replace('.nii.gz', '.json')), 'r') as json_file:
+                        data = json.load(json_file)
+                        run_info = re.search(r'run-\d+', fmap_list[k].filename)
+                        run_info = run_info[0]
+                        run_info_new = 'run-0'
+                        if 'dir-PA' in data["BidsGuess"][1]:
+                            fmap_dir = 'dir-PA'
+                            count_fmap_PA += 1
+                            run_info_new += str(count_fmap_PA)
+                        elif 'dir-AP' in data["BidsGuess"][1]:
+                            fmap_dir = 'dir-AP'
+                            count_fmap_AP += 1
+                            run_info_new += str(count_fmap_AP)
+                        else:
+                            print('\nError: cannot determine whether it is AP or PA\n')
+                            return
+                        run_info_new = run_info_new[:6]
+                    print('Change file name from '+fmap_list[k].filename+' to '+fmap_list[k].filename.replace('dir-both', fmap_dir).replace(run_info, run_info_new))
+                    os.rename(os.path.join(fmap_list[k].dirname, fmap_list[k].filename),
+                              os.path.join(fmap_list[k].dirname, fmap_list[k].filename.replace('dir-both', fmap_dir).replace(run_info, run_info_new)))
+                    print('Change file name from ' + fmap_list[k].filename.replace('.nii.gz','.json') + ' to ' + fmap_list[k].filename.replace('.nii.gz','.json').replace(
+                        'dir-both', fmap_dir).replace(run_info, run_info_new))
+                    os.rename(os.path.join(fmap_list[k].dirname, fmap_list[k].filename.replace('.nii.gz','.json')),
+                              os.path.join(fmap_list[k].dirname, fmap_list[k].filename.replace('.nii.gz','.json').replace('dir-both', fmap_dir).replace(run_info, run_info_new)))
+
+                # update layout
+                layout = BIDSLayout(args.bids_dir, is_derivative=True)
+
+            else:
+                print("Func fieldmaps are concatenated. Running seperate_concatenate_fm")
+                seperate_concatenated_fm(layout, subject, sessions, fsl_dir)
+                # recreate layout with the additional SEFMS
+                layout = BIDSLayout(args.bids_dir, is_derivative=True)
+
+        fmap = layout.get(subject=subject, session=sessions, datatype='fmap', extension='.nii.gz')
+        # Check if there are func fieldmaps and return a list of each SEFM pos/neg pair
+        if fmap:
+            print("Running SEFM select")
+            base_temp_dir = fmap[0].dirname
+            bes_pos, best_neg = sefm_select(args.bids_dir, layout, subject, sessions,
+                                            base_temp_dir, fsl_dir,
+                                            args.debug)
+            for sefm in [os.path.join(x.dirname, x.filename) for x in fmap]:
+                sefm_json = sefm.replace('.nii.gz', '.json')
+                sefm_metadata = layout.get_metadata(sefm)
+
+                if 'Philips' in sefm_metadata['Manufacturer']:
+                    insert_edit_json(sefm_json, 'EffectiveEchoSpacing', 0.00062771)
+                if 'GE' in sefm_metadata['Manufacturer']:
+                    insert_edit_json(sefm_json, 'EffectiveEchoSpacing', 0.000536)
+                if 'Siemens' in sefm_metadata['Manufacturer']:
+                    insert_edit_json(sefm_json, 'EffectiveEchoSpacing', 0.000510012)
+        else:
+            print('Cannot find field maps for this subject')
+
+        # # Check if there are dwi fieldmaps and insert IntendedFor field accordingly
+        # if layout.get(subject=subject, session=sessions, datatype='fmap', extension='.nii.gz', acquisition='dwi'):
+        #     print("Editing DWI jsons")
+        #     edit_dwi_jsons(layout, subject, sessions)
+
+
+
      
 
 if __name__ == "__main__":

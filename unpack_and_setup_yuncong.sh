@@ -229,7 +229,7 @@ if [ -d ${TEMPSRCDATA} ] ; then
     cp -r ${TEMPSRCDATA} ${ROOT_SRCDATA}/
 fi
 
-echo "remove all temporary files"
-rm -rf "${ScratchSpaceDir}"
+#echo "remove all temporary files"
+#rm -rf "${ScratchSpaceDir}"
 
 echo `date`" :UNPACKING AND SETUP COMPLETE: ${SUB}/${VISIT}"
