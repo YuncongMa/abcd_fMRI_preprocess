@@ -1,29 +1,34 @@
 # Yuncong Ma, 2/29/2024
-# ABCD raw data to BIDS format
-# Unpack tgz files and convert them into NII format
-# Rename files
-# Prepare BIDS formatted data
-# Select the best field maps, labeled in their JSON files
+# Convert ABCD raw data in .tgz format to BIDS format in a local environment
 # This code is adapted from abcd-dicom2bids/src/unpack_and_setup.sh
 # All four pairs of field maps will be kept for future selection
 # This code does NOT work for DTI data
 
 # packages
-import glob
 import os
-import shutil
+import re
+import sys
 import subprocess
 import numpy as np
+import bids
+import shutil
+
+# setup the directory of the pNet toolbox folder
+dir_script = '/cbica/home/mayun/Projects/ABCD/Script/abcd_raw2bids'
+sys.path.append(dir_script)
+
+dir_python = '~/.conda/envs/abcd/bin/python'
+
 
 # directories
-dir_abcd_test = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-dir_abcd_fmri_preprocess = os.path.join(dir_abcd_test, 'Python')
-dir_abcd2bids = os.path.join(dir_abcd_test, 'Python', 'abcd-dicom2bids-master')
+dir_abcd_test = '/cbica/home/mayun/Projects/ABCD'
+dir_abcd_fmri_preprocess = os.path.join(dir_abcd_test, 'Script', 'abcd_raw2bids')
+dir_abcd2bids = os.path.join(dir_abcd_test, 'Script', 'abcd_raw2bids', 'abcd-dicom2bids-master')
 dir_raw_data = os.path.join(dir_abcd_test, 'Example_Data')
 dir_temp = os.path.join(dir_abcd_test, 'Temp')
 dir_dcm = os.path.join(dir_abcd_test, 'DCM')
 dir_bids = os.path.join(dir_abcd_test, 'BIDS')
-# dir_fsl = '/usr/local/fsl'
+dir_fsl = '/cbica/software/external/fsl/centos7/5.0.11'
 
 # clean out and create the DCM folder
 # if not os.path.exists(dir_dcm):
@@ -87,9 +92,7 @@ def keyword_in_string(keywords, text):
 
 
 # process for each subject and each session
-# prepare files
 for _, subject in enumerate(subject_unique):
-
     indexes = [index for index, value in enumerate(list_sub) if value == subject]
     SESSION = list_session[indexes[0]]
 
@@ -98,7 +101,7 @@ for _, subject in enumerate(subject_unique):
     if not os.path.exists(dir_temp_sub):
         os.makedirs(dir_temp_sub)
     # only copy anat and rsfMRI data
-    Keywords = ['ABCD-T1', 'ABCD-T2', 'FM', 'ABCD-rsfMRI']
+    Keywords = ['ABCD-T1', 'ABCD-T2', 'ABCD-fMRI', 'ABCD-rsfMRI']
     # generate a scan file
     list_sub_scan = os.path.join(dir_temp_sub, 'List_Scan.txt')
     list_sub_scan = open(list_sub_scan, 'w')
@@ -106,18 +109,7 @@ for _, subject in enumerate(subject_unique):
         if keyword_in_string(Keywords, list_file[i]):
             print(list_file[i], file=list_sub_scan)
     list_sub_scan.close()
-
-# run process
-for _, subject in enumerate(subject_unique):
-    # only test on selected subjects
-    if subject not in ['sub-NDARINV005V6D2C']:
-        continue
-    dir_temp_sub = os.path.join(dir_temp, subject+'_'+SESSION)
-    list_sub_scan = os.path.join(dir_temp_sub, 'List_Scan.txt')
-    indexes = [index for index, value in enumerate(list_sub) if value == subject]
-    SESSION = list_session[indexes[0]]
-
-    # convert raw data to bids format
+    list_sub_scan = list_sub_scan.name
     subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'unpack_and_setup_yuncong.sh'),
                     subject,
                     SESSION,
@@ -129,35 +121,6 @@ for _, subject in enumerate(subject_unique):
                     list_sub_scan
                     ])
 
-    # generate qc for bids results
-    # check whether PhaseEncodingDirection in fMRI map is correct, by comparing to the field map with the same direction
-    # subprocess.run(['bash', os.path.join(dir_abcd_fmri_preprocess, 'submit_qc_bids.sh'),
-    #                 subject,
-    #                 SESSION,
-    #                 dir_bids,
-    #                 dir_abcd_fmri_preprocess
-    #                 ])
 
 
-# adapted from correct_jsons.py in abcd-dicom2bids
-def correct_jsons(CORRECT_JSONS, dir_output):
-    """
-    Correct ABCD BIDS input data to conform to official BIDS Validator.
-    """
-    subprocess.check_call((CORRECT_JSONS, dir_output))
 
-    # Remove the .json files added to each subject's output directory by
-    # sefm_eval_and_json_editor.py, and the vol*.nii.gz files
-    sub_dirs = os.path.join(dir_output, "sub*")
-    for json_path in glob.iglob(os.path.join(sub_dirs, "*.json")):
-        print("Removing .JSON file: {}".format(json_path))
-        os.remove(json_path)
-    for vol_file in glob.iglob(os.path.join(sub_dirs, "ses*",
-                          "fmap", "vol*.nii.gz")):
-        print("Removing 'vol' file: {}".format(vol_file))
-        os.remove(vol_file)
-
-
-correct_jsons(os.path.join(dir_abcd_fmri_preprocess, 'correct_jsons.py'), dir_bids)
-
-print('raw2bids is done')

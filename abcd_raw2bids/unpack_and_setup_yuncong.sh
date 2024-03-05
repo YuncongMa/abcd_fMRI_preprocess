@@ -86,7 +86,7 @@ mkdir ${TempSubjectDir}/BIDS_unprocessed
 cp ${DIR_PYTHON_YM}/dataset_description.json ${TempSubjectDir}/BIDS_unprocessed/
 echo ${participant}
 echo `date`" :RUNNING dcm2bids"
-dcm2bids -d ${TempSubjectDir}/DCMs/${SUB} -p ${participant} -s ${session} -c ${DIR_PYTHON_YM}/abcd_dcm2bids.conf -o ${TempSubjectDir}/BIDS_unprocessed --force_dcm2bids --clobber
+dcm2bids -d ${TempSubjectDir}/DCMs/${SUB} -p ${participant} -s ${session} -c ${DIR_PYTHON_YM}/abcd_dcm2bids.conf -o ${TempSubjectDir}/BIDS_unprocessed --forceDcm2niix --clobber
 
 
 ## replace bvals and bvecs with files supplied by the NDA
