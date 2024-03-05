@@ -28,17 +28,21 @@ For Apple Silicon, use the homebrew to install dcmtk
 ```
 brew install dcmtk
 ```
+5. Install singularity
+https://github.com/sylabs/singularity/releases
+
+6. Add fmriprep and xcp_d singularity images (.img*)
 
 ## Preprocessing Steps
-### 1. Raw data to BIDS format
+A main python script is used to generate bash scripts for processing ABCD dataset in a cluster environment
 ```
-python abcd_raw2bids.py
+python abcd_fmri_preprocess_cluster.py
 ```
-### 2. fmriprep
 
-### 3. XCP-D
-
-### 4. Quality control
+1. Raw data to BIDS format
+2. fmriprep
+3. XCP-D
+4. Quality control
 
 ## Other Tools Included
 ### abcd-dicom2bids 
