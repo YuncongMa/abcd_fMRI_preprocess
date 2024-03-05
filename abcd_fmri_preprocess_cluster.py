@@ -223,7 +223,7 @@ for _, subject in enumerate(subject_unique):
           f'--nthreads $n_thread --mem_mb $max_mem '
           f'--fs-license-file $file_fs '
           f'--dummy-scans $n_dummy '
-          f'--cifti-output "32k" '
+          f'--cifti-output "91k" '
           f'-w $dir_fmriprep_work '
           f'--participant-label $sub_id '
           f'--output-space --use-aroma',
