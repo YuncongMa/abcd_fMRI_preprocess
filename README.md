@@ -31,7 +31,7 @@ brew install dcmtk
 5. Install singularity
 https://github.com/sylabs/singularity/releases
 
-6. Add fmriprep and xcp_d singularity images (.img*)
+6. Add fmriprep and xcp_d singularity images (.simg)
 
 ## Preprocessing Steps
 A main python script is used to generate bash scripts for processing ABCD dataset in a cluster environment
