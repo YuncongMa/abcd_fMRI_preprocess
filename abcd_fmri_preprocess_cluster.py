@@ -1,6 +1,8 @@
 # Yuncong Ma, 3/5/2024
 # ABCD raw data to preprocessed data in a cluster environment
 # This code does NOT work for DTI data
+# source activate /cbica/home/mayun/.conda/envs/abcd
+# python /cbica/home/mayun/Projects/ABCD/Script/abcd_fmri_preprocess_cluster.py
 
 # packages
 import glob
@@ -18,6 +20,12 @@ thread_command = '-pe threaded '
 memory_command = '-l h_vmem='
 log_command = '-o '
 dir_env = '/cbica/home/mayun/.conda/envs/abcd'
+
+# settings for batch processing
+n_subject_per_batch = 50
+flag_clean_temp = 1
+flag_clean_bids = 1
+flag_clean_fmriprep = 1
 
 # Test mode on local computer
 cluster = 0
@@ -38,6 +46,12 @@ else:
 dir_abcd_raw2bids = os.path.join(dir_script, 'abcd_raw2bids')
 dir_abcd2bids = os.path.join(dir_script, 'abcd_raw2bids', 'abcd-dicom2bids-master')
 
+# bash script templates
+file_template_raw2bids = os.path.join(dir_script, 'template', 'template_raw2bids.sh')
+file_template_fmriprep = os.path.join(dir_script, 'template', 'template_fmriprep.sh')
+file_template_xcpd = os.path.join(dir_script, 'template', 'template_xcpd.sh')
+file_template_report = os.path.join(dir_script, 'template', 'template_report.sh')
+
 # directories of raw data and folders for different steps in preprocessing
 # raw data
 dir_raw_data = os.path.join(dir_abcd_test, 'Example_Data')
@@ -57,13 +71,13 @@ file_fmriprep = os.path.join(dir_abcd_test, 'Tool', 'nipreps_fmriprep_23.0.2.sim
 file_xcpd = os.path.join(dir_abcd_test, 'Tool', 'xcp_d-0.6.2.simg')
 
 # setting for fmriprep
-file_fs_license = ''
+file_fs_license = os.path.join(dir_abcd_test, 'Tool/freesurfer/license.txt')
 n_dummy = 10
 fmriprep_output_space = 'MNI152NLin6Asym:res-2'
 # setting for xcpd
 n_dummy = 10
 fwhm = 4.8
-confound = '36P'
+confound ='36P'
 bp_low = 0.01
 bp_high = 0.1
 bp_order = 4
@@ -79,6 +93,10 @@ if not os.path.exists(dir_bids_temp):
     os.makedirs(dir_bids_temp)
 if not os.path.exists(dir_script_cluster):
     os.makedirs(dir_script_cluster)
+if not os.path.exists(dir_xcpd):
+    os.makedirs(dir_xcpd)
+if not os.path.exists(dir_xcpd_work):
+    os.makedirs(dir_xcpd_work)
 
 # copy BIDS description file
 shutil.copyfile(os.path.join(dir_abcd_raw2bids, 'dataset_description.json'), os.path.join(dir_bids, 'dataset_description.json'))
@@ -112,9 +130,6 @@ def keyword_in_string(keywords, text):
 print(f"Start to generate scripts in folder {dir_script_cluster}")
 # Generate bash scripts
 for _, subject in enumerate(subject_unique):
-    # only test on selected subjects
-    # if subject not in ['sub-NDARINVPZUFXXY1']:
-    #     continue
 
     # get session info
     indexes = [index for index, value in enumerate(list_sub) if value == subject]
@@ -140,146 +155,115 @@ for _, subject in enumerate(subject_unique):
     # convert raw data to bids format
     n_thread = 4
     memory = '10G'
-    file_bash = os.path.join(dir_script_cluster, subject+'_'+session, 'submit_unpack.sh')
-    file_bash = open(file_bash, 'w')
-    logFile = os.path.join(dir_script_cluster, subject+'_'+session, 'Log_unpack.log')
+    file_bash = os.path.join(dir_script_cluster, subject+'_'+session, 'submit_raw2bids.sh')
+    logFile = os.path.join(dir_script_cluster, subject+'_'+session, 'Log_raw2bids.log')
 
     # ====== step 1: raw data to BIDS
     now = datetime.now()
     date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
     file_bash_unpack = os.path.join(dir_abcd_raw2bids, 'unpack_and_setup_yuncong.sh')
-    print('#!/bin/sh\n', file=file_bash)
-    print('# This bash script is to run unpack_and_setup_yuncong.sh', file=file_bash)
-    print(f'# created on {date_time}\n', file=file_bash)
-    print(f'# Use command to submit this job:\n# $ {submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash.name}\n', file=file_bash)
-    print(r'echo -e "Start time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
-    print(f'\nsource activate  {dir_env}\n', file=file_bash)
-    print(r'# settings\n', file=file_bash)
-    print(f'file_bash_unpack={file_bash_unpack}', file=file_bash)
-    print(f'subject={subject}', file=file_bash)
-    print(f'session={session}', file=file_bash)
-    print(f'dir_raw_data={dir_raw_data}', file=file_bash)
-    print(f'dir_abcd2bids={dir_abcd2bids}', file=file_bash)
-    print(f'dir_bids={dir_bids}', file=file_bash)
-    print(f'dir_temp_sub={dir_temp_sub}', file=file_bash)
-    print(f'dir_abcd_raw2bids={dir_abcd_raw2bids}', file=file_bash)
-    print(f'list_sub_scan={list_sub_scan.name}', file=file_bash)
-    print(f'\nbash $file_bash_unpack $subject $session $dir_raw_data $dir_abcd2bids $dir_bids $dir_temp_sub $dir_abcd_raw2bids $list_sub_scan\n', file=file_bash)
-    print(r'echo -e "Finished time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
-    file_bash.close()
+    with open(file_template_raw2bids, 'r') as file:
+        template_content = file.read()
+    template_content = template_content \
+        .replace('{$date_time$}', str(date_time)) \
+        .replace('{$job_submit_command$}', f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
+        .replace('{$file_bash_unpack$}', file_bash_unpack) \
+        .replace('{$subject$}', subject[4:]) \
+        .replace('{$session$}', session) \
+        .replace('{$dir_raw_data$}', dir_raw_data) \
+        .replace('{$dir_abcd2bids$}', dir_abcd2bids) \
+        .replace('{$dir_bids$}', dir_bids) \
+        .replace('{$dir_temp_sub$}', dir_temp_sub) \
+        .replace('{$dir_abcd_raw2bids$}', dir_abcd_raw2bids) \
+        .replace('{$list_sub_scan$}', list_sub_scan.name)
 
-    # ====== step 2: QC for BIDS
-    # generate qc for bids results
-    # check whether PhaseEncodingDirection in fMRI map is correct, by comparing to the field map with the same direction
-    n_thread = 4
-    memory = '10G'
-    file_bash = os.path.join(dir_script_cluster, subject+'_'+session, 'submit_qc_bids.sh')
     file_bash = open(file_bash, 'w')
-    logFile = os.path.join(dir_script_cluster, subject+'_'+session, 'Log_qc.log')
-
-    now = datetime.now()
-    date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
-    file_qc = os.path.join(dir_abcd_raw2bids, 'qc_bids.py')
-    print('#!/bin/sh\n', file=file_bash)
-    print('# This bash script is to run submit_qc_bids.sh', file=file_bash)
-    print(f'# created on {date_time}\n', file=file_bash)
-    print(f'# Use command to submit this job:\n# $ {submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash.name}\n', file=file_bash)
-    print(r'echo -e "Start time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
-    print(f'\nsource activate  {dir_env}\n', file=file_bash)
-    print(r'# settings\n', file=file_bash)
-    print(f'file_qc={file_qc}', file=file_bash)
-    print(f'subject={subject}', file=file_bash)
-    print(f'session={session}', file=file_bash)
-    print(f'dir_bids={dir_bids}', file=file_bash)
-    print(f'dir_abcd_raw2bids={dir_abcd_raw2bids}', file=file_bash)
-    print(f'\npython $file_qc $subject $session $dir_bids $dir_fsl dir_abcd_raw2bids\n', file=file_bash)
-    print(r'echo -e "Finished time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
+    print(template_content, file=file_bash)
     file_bash.close()
 
-    # ====== step 3: fmriprep
+    # ====== step 2: fmriprep
     n_thread = 4
-    memory = '64G'
+    memory = '48G'
+    memory_fmriprep = 47000
     file_bash = os.path.join(dir_script_cluster, subject+'_'+session, 'submit_fmriprep.sh')
+    logFile = os.path.join(dir_script_cluster, subject+'_'+session, 'Log_fmriprep.log')
+    with open(file_template_fmriprep, 'r') as file:
+        template_content = file.read()
+    template_content = template_content \
+        .replace('{$date_time$}', str(date_time)) \
+        .replace('{$job_submit_command$}', f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
+        .replace('{$file_fmriprep$}', file_fmriprep) \
+        .replace('{$dir_bids$}', dir_bids) \
+        .replace('{$dir_output$}', dir_fmriprep) \
+        .replace('{$n_thread$}', str(n_thread)) \
+        .replace('{$max_mem$}', str(memory_fmriprep)) \
+        .replace('{$file_fs_license$}', file_fs_license) \
+        .replace('{$n_dummy$}', str(n_dummy)) \
+        .replace('{$dir_fmriprep_work$}', dir_fmriprep_work) \
+        .replace('{$subject$}', subject[4:]) \
+        .replace('{$output_space$}', fmriprep_output_space)
+
     file_bash = open(file_bash, 'w')
-    logFile = os.path.join(dir_temp_sub, 'Log_fmriprep.log')
-    print('#!/bin/sh\n', file=file_bash)
-    print('# This bash script is to run fmriprep', file=file_bash)
-    print(f'# created on {date_time}\n', file=file_bash)
-    print(f'# Use command to submit this job:\n# $ {submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash.name}\n', file=file_bash)
-    print(r'echo -e "Start time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
-    print('\nunset PYTHONPATH\n', file=file_bash)
-    print(f'file_fmriprep={file_fmriprep}', file=file_bash)
-    print(f'dir_bids={dir_bids}', file=file_bash)
-    print(f'dir_output={dir_fmriprep}', file=file_bash)
-    print(f'n_thread={n_thread}', file=file_bash)
-    print(f'max_mem={memory}', file=file_bash)
-    print(f'file_fs_license={file_fs_license}', file=file_bash)
-    print(f'n_dummy={n_dummy}', file=file_bash)
-    print(f'dir_fmriprep_work={dir_fmriprep_work}', file=file_bash)
-    print(f'sub_id={subject[4:]}', file=file_bash)
-    print(f'output_space={fmriprep_output_space}', file=file_bash)
-    print(f'\nsingularity run --cleanenv $file_fmriprep '
-          f'$dir_bids $dir_output '
-          f'--nthreads $n_thread --mem_mb $max_mem '
-          f'--fs-license-file $file_fs '
-          f'--dummy-scans $n_dummy '
-          f'--cifti-output "91k" '
-          f'-w $dir_fmriprep_work '
-          f'--participant-label $sub_id '
-          f'--output-space --use-aroma',
-          file=file_bash)
-    print(f'\n'r'echo -e "Finished time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
+    print(template_content, file=file_bash)
     file_bash.close()
 
-    # ====== step 4: XCP-D
+    # ====== step 3: XCP-D
     n_thread = 4
     memory = '11G'
     memory_xcpd = 10
     file_bash = os.path.join(dir_script_cluster, subject+'_'+session, 'submit_xcpd.sh')
-    file_bash = open(file_bash, 'w')
     logFile = os.path.join(dir_script_cluster, subject+'_'+session, 'Log_xcpd.log')
+    
+    with open(file_template_xcpd, 'r') as file:
+        template_content = file.read()
+    template_content = template_content \
+        .replace('{$date_time$}', str(date_time)) \
+        .replace('{$job_submit_command$}', f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
+        .replace('{$file_xcpd$}', file_xcpd) \
+        .replace('{$dir_output$}', dir_xcpd) \
+        .replace('{$dir_fmriprep$}', dir_fmriprep) \
+        .replace('{$n_thread$}', str(n_thread)) \
+        .replace('{$memory$}', str(memory_xcpd)) \
+        .replace('{$subject$}', subject[4:]) \
+        .replace('{$file_fs_license$}', file_fs_license) \
+        .replace('{$n_dummy$}', str(n_dummy)) \
+        .replace('{$fwhm$}', str(fwhm)) \
+        .replace('{$confound$}', confound) \
+        .replace('{$bp_low$}', str(bp_low)) \
+        .replace('{$bp_high$}', str(bp_high)) \
+        .replace('{$bp_order$}', str(bp_order)) \
+        .replace('{$fd_threshold$}', str(fd_threshold)) \
+        .replace('{$dir_xcpd_work$}', dir_xcpd_work)
+    
+    file_bash = open(file_bash, 'w')
+    print(template_content, file=file_bash)
+    file_bash.close()
+    
+    # ====== step 4: final report
+    # Generate HTML-based report files for manual examination
+    n_thread = 4
+    memory = '10G'
+    file_bash = os.path.join(dir_script_cluster, subject+'_'+session, 'submit_report.sh')
+    file_bash = open(file_bash, 'w')
+    logFile = os.path.join(dir_script_cluster, subject+'_'+session, 'Log_report.log')
+
+    now = datetime.now()
+    date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+    file_report = os.path.join(dir_script, 'report', 'report.py')
     print('#!/bin/sh\n', file=file_bash)
-    print('# This bash script is to run fmriprep', file=file_bash)
+    print('# This bash script is to run submit_report.sh', file=file_bash)
     print(f'# created on {date_time}\n', file=file_bash)
-    print(
-        f'# Use command to submit this job:\n# $ {submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash.name}\n',
-        file=file_bash)
-    print(f'file_xcpd={file_xcpd}', file=file_bash)
+    print(f'# Use command to submit this job:\n# $ {submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash.name}\n', file=file_bash)
+    print(r'echo -e "Start time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
+    print(f'\nsource activate  {dir_env}\n', file=file_bash)
+    print(r'# settings\n', file=file_bash)
+    print(f'file_report={file_report}', file=file_bash)
+    print(f'subject={subject}', file=file_bash)
+    print(f'session={session}', file=file_bash)
     print(f'dir_bids={dir_bids}', file=file_bash)
-    print(f'dir_output={dir_fmriprep}', file=file_bash)
-    print(f'n_thread={n_thread}', file=file_bash)
-    print(f'max_mem={memory}', file=file_bash)
-    print(f'file_fs_license={file_fs_license}', file=file_bash)
-    print(f'sub_id={subject[4:]}', file=file_bash)
-    print(f'n_dummy={n_dummy}', file=file_bash)
-    print(f'dir_output={dir_xcpd}', file=file_bash)
-    print(f'fwhm={fwhm}', file=file_bash)
-    print(f'confound={confound}', file=file_bash)
-    print(f'bp_low={bp_low}', file=file_bash)
-    print(f'bp_high={bp_high}', file=file_bash)
-    print(f'bp_order={bp_order}', file=file_bash)
-    print(f'fd_threshold={fd_threshold}', file=file_bash)
-    print(f'dir_xcpd_work={dir_xcpd_work}', file=file_bash)
-    print(f'fd_threshold={fd_threshold}', file=file_bash)
-    print(f'$file_log_job={logFile}', file=file_bash)
-    print(f'\n'r'echo -e "Start time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
-    print(f'\nsingularity run --cleanenv $file_xcpd '
-          f'--nthreads $n_thread --memory $max_mem '
-          f'-log $file_log_job '
-          f'--fs-license-file $file_fs '
-          f'--n_dummy $n_dummy '
-          f'-fmriprep $dir_fmriprep'
-          f'-output $dir_output '
-          f'-fwhm $fwhm '
-          f'-confound $confound '
-          f'-bp_low $bp_low '
-          f'bp_high $bp_high '
-          f'-bp_order $bp_order '
-          f'-fd_threshold $fd_threshold'
-          f'--work_dir $dir_xcpd_work'
-          f'--participant-label $sub_id',
-          file=file_bash)
-    print(f'\n'r'echo -e "Finished time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
+    print(f'dir_abcd_raw2bids={dir_abcd_raw2bids}', file=file_bash)
+    print(f'\npython $file_report $subject $session $dir_bids $dir_fsl dir_abcd_raw2bids\n', file=file_bash)
+    print(r'echo -e "Finished time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
     file_bash.close()
 
 print(f"All scripts are generated successfully\n")
