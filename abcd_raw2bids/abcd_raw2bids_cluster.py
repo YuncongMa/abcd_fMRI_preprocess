@@ -41,7 +41,7 @@ else:
 
 # directories of sub-scripts
 dir_abcd_raw2bids = os.path.join(dir_script, 'abcd_raw2bids')
-dir_abcd2bids = os.path.join(dir_script, 'abcd_raw2bids', 'abcd-dicom2bids-master')
+dir_abcd2bids = os.path.join(dir_script, 'abcd_raw2bids', 'abcd-dicom2bids')
 
 # directories of raw data and folders for different steps in preprocessing
 # raw data

@@ -23,7 +23,7 @@ dir_python = '~/.conda/envs/abcd/bin/python'
 # directories
 dir_abcd_test = '/cbica/home/mayun/Projects/ABCD'
 dir_abcd_fmri_preprocess = os.path.join(dir_abcd_test, 'Script', 'abcd_raw2bids')
-dir_abcd2bids = os.path.join(dir_abcd_test, 'Script', 'abcd_raw2bids', 'abcd-dicom2bids-master')
+dir_abcd2bids = os.path.join(dir_abcd_test, 'Script', 'abcd_raw2bids', 'abcd-dicom2bids')
 dir_raw_data = os.path.join(dir_abcd_test, 'Example_Data')
 dir_temp = os.path.join(dir_abcd_test, 'Temp')
 dir_dcm = os.path.join(dir_abcd_test, 'DCM')

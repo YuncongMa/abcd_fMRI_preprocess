@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-# Yuncong Ma, 2/27/2024
+# Yuncong Ma, 3/4/2024
 # remove matlab functions from the original sefm_eval_and_json_editor.py
 
 import os, sys, glob, argparse, subprocess, socket, operator, shutil, json, string, re
@@ -55,7 +55,7 @@ def read_bids_layout(layout, subject_list=None, collect_on_subject=False):
     return subsess
 
 
-def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
+def sefm_select(dir_bids, layout, subject, sessions, base_temp_dir, fsl_dir,
                 debug=False):
     pos = 'PA'
     neg = 'AP'
@@ -152,8 +152,8 @@ def sefm_select(layout, subject, sessions, base_temp_dir, fsl_dir,
     print('\n')
 
     # Add metadata
-    func_list = [os.path.join(x.dirname, x.filename) for x in layout.get(subject=subject, session=sessions, datatype='func', extension='.nii.gz')]
-    anat_list = [os.path.join(x.dirname, x.filename) for x in layout.get(subject=subject, session=sessions, datatype='anat', extension='.nii.gz')]
+    func_list = [os.path.join(x.dirname, x.filename).replace(dir_bids, '.') for x in layout.get(subject=subject, session=sessions, datatype='func', extension='.nii.gz')]
+    anat_list = [os.path.join(x.dirname, x.filename).replace(dir_bids, '.') for x in layout.get(subject=subject, session=sessions, datatype='anat', extension='.nii.gz')]
     for pair in pairs:
         pos_nifti = pair[0]
         neg_nifti = pair[1]
@@ -244,8 +244,9 @@ def seperate_concatenated_fm(bids_layout, subject, session, fsl_dir, debug=False
     if not debug:
        rm_cmd = ['rm', '-rf', os.path.join(FM_dir, "vol*")]
        subprocess.run(rm_cmd, env=os.environ)
-       # rm_cmd = ['rm', '-rf', os.path.join()]
-       # subprocess.run(rm_cmd, env=os.environ)
+       # remove dir-both files which have issues with fmriprep
+       rm_cmd = ['rm', '-rf', os.path.join(FM_dir, "*dir-both*")]
+       subprocess.run(rm_cmd, env=os.environ)
    
     return
 
@@ -478,7 +479,7 @@ def main(argv=sys.argv):
         if fmap:
             print("Running SEFM select")
             base_temp_dir = fmap[0].dirname
-            bes_pos, best_neg = sefm_select(layout, subject, sessions,
+            bes_pos, best_neg = sefm_select(args.bids_dir, layout, subject, sessions,
                                             base_temp_dir, fsl_dir,
                                             args.debug)
             for sefm in [os.path.join(x.dirname, x.filename) for x in fmap]:
