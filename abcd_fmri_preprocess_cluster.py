@@ -1,8 +1,10 @@
-# Yuncong Ma, 3/7/2024
+# Yuncong Ma, 3/11/2024
 # ABCD raw data to preprocessed data in a cluster environment
 # This code does NOT work for DTI data
 # source activate /cbica/home/mayun/.conda/envs/abcd
 # python /cbica/home/mayun/Projects/ABCD/Script/abcd_fmri_preprocess_cluster.py
+# python abcd_fmri_preprocess_cluster.
+
 
 # packages
 import glob
@@ -21,16 +23,16 @@ memory_command = '-l h_vmem='
 log_command = '-o '
 
 # settings for batch processing
-n_subject_per_batch = 50
+n_subject_per_batch = 20
 flag_clean_temp = 1
 flag_clean_bids = 1
 flag_clean_fmriprep = 1
 
 # Test mode on local computer
-cluster = 0
+flag_cluster = 0
 
 # setup the directory of the pNet toolbox folder
-if cluster:
+if flag_cluster:
     dir_script = '/cbica/home/mayun/Projects/ABCD/Script'
     dir_python = '~/.conda/envs/abcd/bin/python'
     sys.path.append(dir_script)
@@ -43,6 +45,7 @@ else:
     dir_fsl = '/usr/local/fsl'
     dir_conda_env = '/Users/yuncongma/anaconda3/envs/abcd_fmri'
 
+
 # directories of sub-scripts
 dir_abcd_raw2bids = os.path.join(dir_script, 'abcd_raw2bids')
 dir_abcd2bids = os.path.join(dir_script, 'abcd_raw2bids', 'abcd-dicom2bids')
@@ -51,7 +54,11 @@ dir_abcd2bids = os.path.join(dir_script, 'abcd_raw2bids', 'abcd-dicom2bids')
 file_template_raw2bids = os.path.join(dir_script, 'template', 'template_raw2bids.sh')
 file_template_fmriprep = os.path.join(dir_script, 'template', 'template_fmriprep.sh')
 file_template_xcpd = os.path.join(dir_script, 'template', 'template_xcpd.sh')
-file_template_report = os.path.join(dir_script, 'template', 'template_report.sh')
+file_template_collect = os.path.join(dir_script, 'template', 'template_collect.sh')
+if flag_cluster:
+    file_template_workflow = os.path.join(dir_script, 'template', 'template_workflow_cluster.sh')
+else:
+    file_template_workflow = os.path.join(dir_script, 'template', 'template_workflow.sh')
 
 # directories of raw data and folders for different steps in preprocessing
 # raw data
@@ -62,6 +69,7 @@ dir_bids_temp = os.path.join(dir_abcd_test, 'BIDS_Temp')
 dir_fmriprep = os.path.join(dir_abcd_test, 'fmriprep')
 dir_fmriprep_work = os.path.join(dir_abcd_test, 'fmriprep_work')
 dir_xcpd = os.path.join(dir_abcd_test, 'XCP_D')
+dir_xcpd_cifti = os.path.join(dir_abcd_test, 'XCP_D_cifti')
 dir_xcpd_work = os.path.join(dir_abcd_test, 'XCP_D_work')
 
 # directory to save scripts for cluster
@@ -83,6 +91,14 @@ bp_low = 0.01
 bp_high = 0.1
 bp_order = 4
 fd_threshold = 0.2
+
+# final output
+dir_failed = os.path.join(dir_abcd_test, 'Failed')
+dir_result = os.path.join(dir_abcd_test, 'Result')
+
+# steps to run
+# ['raw2bids', 'fmriprep', 'xcpd', 'collect']
+list_step=['fmriprep', 'xcpd']
 # ============================================== #
 
 # ======= start to extract raw data info ======= #
@@ -98,6 +114,8 @@ if not os.path.exists(dir_script_cluster):
     os.makedirs(dir_script_cluster)
 if not os.path.exists(dir_xcpd):
     os.makedirs(dir_xcpd)
+if not os.path.exists(dir_xcpd_cifti):
+    os.makedirs(dir_xcpd_cifti)
 if not os.path.exists(dir_xcpd_work):
     os.makedirs(dir_xcpd_work)
 
@@ -136,6 +154,8 @@ def keyword_in_string(keywords, text):
 print(f"Start to generate scripts in folder {dir_script_cluster}")
 # Generate bash scripts
 for _, subject in enumerate(subject_unique):
+    now = datetime.now()
+    date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
 
     # get session info
     indexes = [index for index, value in enumerate(list_sub) if value == subject]
@@ -158,16 +178,56 @@ for _, subject in enumerate(subject_unique):
             print(list_file[i], file=list_sub_scan)
     list_sub_scan.close()
 
-    # convert raw data to bids format
-    n_thread = 4
-    memory = '10G'
-    file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'submit_raw2bids.sh')
-    logFile = os.path.join(dir_script_cluster, subject + '_' + session, 'Log_raw2bids.log')
+    # ====== workflow
+    n_thread = 1
+    memory = '5G'
+    file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'workflow.sh')
+    logFile = os.path.join(dir_script_cluster, subject + '_' + session, 'Log_workflow.log')
+    with open(file_template_workflow, 'r') as file:
+        workflow_content = file.read()
+    workflow_content = workflow_content \
+        .replace('{$date_time$}', str(date_time)) \
+        .replace('{$job_submit_command_raw2bids$}', f'bash {file_bash}') \
+        .replace('{$subject$}', subject[4:]) \
+        .replace('{$session$}', session[4:]) \
+        .replace('{$dir_script_sub$}', os.path.join(dir_script_cluster, subject + '_' + session)) \
+        .replace('{$dir_bids_temp_sub$}', os.path.join(dir_bids_temp, subject + '_' + session)) \
+        .replace('{$dir_fmriprep_temp_sub$}', os.path.join(dir_fmriprep_work, subject + '_' + session)) \
+        .replace('{$dir_xcpd_temp_sub$}', os.path.join(dir_xcpd_work, subject + '_' + session))
+    if flag_cluster:
+        workflow_content = workflow_content \
+            .replace('{$job_submit_command$}', f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+    else:
+        workflow_content = workflow_content \
+            .replace('{$job_submit_command$}', f'bash {file_bash}')
+    # check steps
+    if 'raw2bids' in list_step:
+        workflow_content = workflow_content.replace('{$run_raw2bids$}', '1')
+    else:
+        workflow_content = workflow_content.replace('{$run_raw2bids$}', '0')
+    if 'fmriprep' in list_step:
+        workflow_content = workflow_content.replace('{$run_fmriprep$}', '1')
+    else:
+        workflow_content = workflow_content.replace('{$run_fmriprep$}', '0')
+    if 'xcpd' in list_step:
+        workflow_content = workflow_content.replace('{$run_xcpd$}', '1')
+    else:
+        workflow_content = workflow_content.replace('{$run_xcpd$}', '0')
 
     # ====== step 1: raw data to BIDS
-    now = datetime.now()
-    date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+    n_thread = 4
+    memory = '10G'
+    file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'raw2bids.sh')
+    logFile = os.path.join(dir_script_cluster, subject + '_' + session, 'Log_raw2bids.log')
     file_raw2bids = os.path.join(dir_abcd_raw2bids, 'abcd_raw2bids.sh')
+    if flag_cluster:
+        workflow_content = workflow_content \
+            .replace('{$job_submit_command_raw2bids$}',
+                     f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+    else:
+        workflow_content = workflow_content \
+            .replace('{$job_submit_command_raw2bids$}',
+                     f'bash {file_bash}')
     with open(file_template_raw2bids, 'r') as file:
         template_content = file.read()
     template_content = template_content \
@@ -193,8 +253,17 @@ for _, subject in enumerate(subject_unique):
     n_thread = 4
     memory = '48G'
     memory_fmriprep = 47000
-    file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'submit_fmriprep.sh')
+    file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'fmriprep.sh')
     logFile = os.path.join(dir_script_cluster, subject + '_' + session, 'Log_fmriprep.log')
+    dir_fmriprep_work_sub = os.path.join(dir_fmriprep_work, subject + '_' + session)
+    if flag_cluster:
+        workflow_content = workflow_content \
+            .replace('{$job_submit_command_fmriprep$}',
+                     f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+    else:
+        workflow_content = workflow_content \
+            .replace('{$job_submit_command_fmriprep$}',
+                     f'bash {file_bash}')
     with open(file_template_fmriprep, 'r') as file:
         template_content = file.read()
     template_content = template_content \
@@ -208,7 +277,7 @@ for _, subject in enumerate(subject_unique):
         .replace('{$max_mem$}', str(memory_fmriprep)) \
         .replace('{$file_fs_license$}', file_fs_license) \
         .replace('{$n_dummy$}', str(n_dummy)) \
-        .replace('{$dir_fmriprep_work$}', dir_fmriprep_work) \
+        .replace('{$dir_fmriprep_work_sub$}', dir_fmriprep_work_sub) \
         .replace('{$subject$}', subject[4:]) \
         .replace('{$output_space$}', fmriprep_output_space) \
         .replace('{$file_log$}', logFile)
@@ -221,9 +290,17 @@ for _, subject in enumerate(subject_unique):
     n_thread = 4
     memory = '11G'
     memory_xcpd = 10
-    file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'submit_xcpd.sh')
+    file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'xcpd.sh')
     logFile = os.path.join(dir_script_cluster, subject + '_' + session, 'Log_xcpd.log')
-
+    dir_xcpd_work_sub = os.path.join(dir_xcpd_work, subject + '_' + session)
+    if flag_cluster:
+        workflow_content = workflow_content \
+            .replace('{$job_submit_command_xcpd$}',
+                     f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+    else:
+        workflow_content = workflow_content \
+            .replace('{$job_submit_command_xcpd$}',
+                     f'bash {file_bash}')
     with open(file_template_xcpd, 'r') as file:
         template_content = file.read()
     template_content = template_content \
@@ -232,6 +309,7 @@ for _, subject in enumerate(subject_unique):
                  f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
         .replace('{$file_xcpd$}', file_xcpd) \
         .replace('{$dir_xcpd$}', dir_xcpd) \
+        .replace('{$dir_xcpd_cifti$}', dir_xcpd_cifti) \
         .replace('{$dir_fmriprep$}', dir_fmriprep) \
         .replace('{$n_thread$}', str(n_thread)) \
         .replace('{$memory$}', str(memory_xcpd)) \
@@ -244,40 +322,55 @@ for _, subject in enumerate(subject_unique):
         .replace('{$bp_high$}', str(bp_high)) \
         .replace('{$bp_order$}', str(bp_order)) \
         .replace('{$fd_threshold$}', str(fd_threshold)) \
-        .replace('{$dir_xcpd_work$}', dir_xcpd_work) \
+        .replace('{$dir_xcpd_work_sub$}', dir_xcpd_work_sub) \
         .replace('{$file_log$}', logFile)
 
     file_bash = open(file_bash, 'w')
     print(template_content, file=file_bash)
     file_bash.close()
 
-    # ====== step 4: final report
+    # ====== step 4: collect
+    # Move results into result folder or failed folder
     # Generate HTML-based report files for manual examination
-    n_thread = 4
-    memory = '10G'
-    file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'submit_report.sh')
-    file_bash = open(file_bash, 'w')
-    logFile = os.path.join(dir_script_cluster, subject + '_' + session, 'Log_report.log')
+    n_thread = 1
+    memory = '5G'
+    file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'collect.sh')
+    logFile = os.path.join(dir_script_cluster, subject + '_' + session, 'Log_collect.log')
+    if flag_cluster:
+        workflow_content = workflow_content \
+            .replace('{$job_submit_command_collect$}',
+                     f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+    else:
+        workflow_content = workflow_content \
+            .replace('{$job_submit_command_collect$}',
+                     f'bash {file_bash}')
+    with open(file_template_collect, 'r') as file:
+        template_content = file.read()
+    template_content = template_content \
+        .replace('{$date_time$}', str(date_time)) \
+        .replace('{$job_submit_command$}',
+                 f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
+        .replace('{$flag_cluster$}', str(flag_cluster)) \
+        .replace('{$subject$}', subject[4:]) \
+        .replace('{$session$}', session[4:]) \
+        .replace('{$dir_failed$}', dir_failed) \
+        .replace('{$dir_result$}', dir_result) \
+        .replace('{$dir_bids$}', dir_bids) \
+        .replace('{$dir_bids_temp$}', dir_bids_temp) \
+        .replace('{$dir_fmriprep$}', dir_fmriprep) \
+        .replace('{$dir_fmriprep_work_sub$}', dir_fmriprep_work_sub) \
+        .replace('{$dir_xcpd$}', dir_xcpd) \
+        .replace('{$dir_xcpd_cifti$}', dir_xcpd_cifti) \
+        .replace('{$dir_xcpd_work_sub$}', dir_xcpd_work_sub)
 
-    now = datetime.now()
-    date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
-    file_report = os.path.join(dir_script, 'report', 'report.py')
-    print('#!/bin/sh\n', file=file_bash)
-    print('# This bash script is to run submit_report.sh', file=file_bash)
-    print(f'# created on {date_time}\n', file=file_bash)
-    print(
-        f'# Use command to submit this job:\n# $ {submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash.name}\n',
-        file=file_bash)
-    print(r'echo -e "Start time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
-    print(f'\nsource activate  {dir_conda_env}\n', file=file_bash)
-    print(r'# settings\n', file=file_bash)
-    print(f'file_report={file_report}', file=file_bash)
-    print(f'subject={subject}', file=file_bash)
-    print(f'session={session}', file=file_bash)
-    print(f'dir_bids={dir_bids}', file=file_bash)
-    print(f'dir_abcd_raw2bids={dir_abcd_raw2bids}', file=file_bash)
-    print(f'\npython $file_report $subject $session $dir_bids $dir_fsl dir_abcd_raw2bids\n', file=file_bash)
-    print(r'echo -e "Finished time : `date +%F-%H:%M:%S`\n" ', file=file_bash)
+    file_bash = open(file_bash, 'w')
+    print(template_content, file=file_bash)
+    file_bash.close()
+
+    # output workflow.sh
+    file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'workflow.sh')
+    file_bash = open(file_bash, 'w')
+    print(workflow_content, file=file_bash)
     file_bash.close()
 
 print(f"All scripts are generated successfully\n")
