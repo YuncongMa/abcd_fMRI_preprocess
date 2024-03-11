@@ -1,41 +1,48 @@
 #!/bin/sh
 
-# This bash script is to run unpack_and_setup_yuncong.sh
+# This bash script is to run raw2bids.sh
 # The script is generated based on the toolbox abcd_fmri_preprocess (/template/template_raw2bids.sh)
 # created on {$date_time$}
 
 # Use command to submit this job:
 # $ {$job_submit_command$}
 
-echo -e "Start time : `date +%F-%H:%M:%S`\n" 
+echo -e "Start raw2bids at `date +%F-%H:%M:%S`\n"
 
-source activate {$dir_conda_env$}
+# ======== settings ======== #
+# bash file to do raw2bids in toolbox /abcd_raw2bids/abcd_raw2bids.sh
+file_raw2bids={$file_raw2bids$}
 
-# settings
-
-file_bash_unpack={$file_bash_unpack$}
-
+# information of the subject, session, and scan list
 subject={$subject$}
 session={$session$}
 list_sub_scan={$list_sub_scan$}
 
-dir_raw_data={$dir_raw_data}
-dir_bids={$dir_bids}
-dir_temp_sub={$dir_temp_sub}
+# directories of bids output folder and temporary folder
+dir_bids={$dir_bids$}
+dir_bids_temp={$dir_bids_temp$}
 
-dir_abcd2bids={$dir_abcd2bids$}
+# directory to the toolbox sub-folder ./abcd_raw2bids
 dir_abcd_raw2bids={$dir_abcd_raw2bids$}
+
+# log file
+file_log={$file_log$}
+
+# ======================== #
+
+# activate conda environment
+
+source activate {$dir_conda_env$}
 
 # run raw2bids
 
-bash $file_bash_unpack \
- $subject \
- $session \
- $dir_raw_data \
- $dir_abcd2bids \
- $dir_bids \
- $dir_temp_sub \
- $dir_abcd_raw2bids \
- $list_sub_scan
+bash $file_raw2bids \
+ --subject $subject \
+ --session $session \
+ --bids $dir_bids \
+ --tempDir $dir_bids_temp \
+ --abcd_raw2bids $dir_abcd_raw2bids \
+ --scanList $list_sub_scan \
+ >> $file_log 2>&1
 
-echo -e "Finished time : `date +%F-%H:%M:%S`\n" 
+echo -e "Finish raw2bids at `date +%F-%H:%M:%S`\n"

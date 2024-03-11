@@ -8,20 +8,29 @@
 # $ {$job_submit_command$}
 
 
-echo -e "Start time : `date +%F-%H:%M:%S`\n" 
+echo -e "Start xcpd at `date +%F-%H:%M:%S`\n"
 
-# setting
+# ======== settings ======== #
 
+# singularity file for xcp_d
 file_xcpd={$file_xcpd$}
+# number of thread
 n_thread={$n_thread$}
+# maximum memory (GB)
 memory={$memory$}
 
-dir_output={$dir_output$}
-dir_xcpd_work={$dir_xcpd_work$}
+# directory of the fmriprep input folder
 dir_fmriprep={$dir_fmriprep$}
+# directory of the xcpd output folder
+dir_xcpd={$dir_xcpd$}
+dir_xcpd_cifti={$dir_xcpd_cifti$}
+# directory to store temporary files
+dir_xcpd_work_sub={$dir_xcpd_work_sub$}
 
+# subject
 subject={$subject$}
 
+# optional settings for the preprocessing
 n_dummy={$n_dummy$}
 fwhm={$fwhm$}
 confound='{$confound$}'
@@ -30,7 +39,13 @@ bp_high={$bp_high$}
 bp_order={$bp_order$}
 fd_threshold={$fd_threshold$}
 
+# license file for FreeSurfer
 file_fs_license={$file_fs_license$}
+
+# log file
+file_log={$file_log$}
+
+# ======================== #
 
 # run xcp-d
 
@@ -50,7 +65,8 @@ singularity run --cleanenv $file_xcpd \
  --fs-license-file $file_fs_license \
  --work_dir $dir_xcpd_work \
  --cifti \
- $dir_fmriprep $dir_output participant
+ $dir_fmriprep $dir_xcpd_cifti participant \
+ >> $file_log 2>&1
 
 # run volume version
  singularity run --cleanenv $file_xcpd \
@@ -66,7 +82,8 @@ singularity run --cleanenv $file_xcpd \
  -f $fd_threshold \
  --skip-parcellation \
  --fs-license-file $file_fs_license \
- --work_dir $dir_xcpd_work \
- $dir_fmriprep $dir_output participant
+ --work_dir $dir_xcpd_work_sub \
+ $dir_fmriprep $dir_xcpd participant \
+ >> $file_log 2>&1
 
-echo -e "Finished time : `date +%F-%H:%M:%S`\n" 
+echo -e "Finish xcpd at `date +%F-%H:%M:%S`\n"
