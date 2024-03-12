@@ -8,6 +8,7 @@ import glob
 import json
 import os
 import sys
+import re
 
 
 def read_json_field(json_path, json_field):
@@ -116,6 +117,7 @@ def main(argv=None):
                         flag_correction += 1
                         print(json_path + ': No ReconMatrixPE')
 
+                # skip this step due to updated code in sefm_eval_and_json_editor_yuncong.py
                 # Find the IntendedFor field that is a non-empty list
                 # if 'fmap' in root and 'IntendedFor' in data and len(data['IntendedFor']) > 0:
                 #     # Regular expression replace all paths in that list with a relative path to ses-SESSION

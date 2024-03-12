@@ -1,9 +1,9 @@
-# Yuncong Ma, 3/11/2024
+# Yuncong Ma, 3/12/2024
 # ABCD raw data to preprocessed data in a cluster environment
 # This code does NOT work for DTI data
 # source activate /cbica/home/mayun/.conda/envs/abcd
 # python /cbica/home/mayun/Projects/ABCD/Script/abcd_fmri_preprocess_cluster.py
-# python abcd_fmri_preprocess_cluster.
+# python abcd_fmri_preprocess_cluster.py
 
 
 # packages
@@ -29,7 +29,7 @@ flag_clean_bids = 1
 flag_clean_fmriprep = 1
 
 # Test mode on local computer
-flag_cluster = 0
+flag_cluster = 1
 
 # setup the directory of the pNet toolbox folder
 if flag_cluster:
@@ -59,6 +59,7 @@ if flag_cluster:
     file_template_workflow = os.path.join(dir_script, 'template', 'template_workflow_cluster.sh')
 else:
     file_template_workflow = os.path.join(dir_script, 'template', 'template_workflow.sh')
+file_template_report = os.path.join(dir_script, 'template', 'template_report.html')
 
 # directories of raw data and folders for different steps in preprocessing
 # raw data
@@ -213,6 +214,10 @@ for _, subject in enumerate(subject_unique):
         workflow_content = workflow_content.replace('{$run_xcpd$}', '1')
     else:
         workflow_content = workflow_content.replace('{$run_xcpd$}', '0')
+    if 'collect' in list_step:
+        workflow_content = workflow_content.replace('{$run_collect$}', '1')
+    else:
+        workflow_content = workflow_content.replace('{$run_collect$}', '0')
 
     # ====== step 1: raw data to BIDS
     n_thread = 4
@@ -350,11 +355,11 @@ for _, subject in enumerate(subject_unique):
         .replace('{$date_time$}', str(date_time)) \
         .replace('{$job_submit_command$}',
                  f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
-        .replace('{$flag_cluster$}', str(flag_cluster)) \
         .replace('{$subject$}', subject[4:]) \
         .replace('{$session$}', session[4:]) \
         .replace('{$dir_failed$}', dir_failed) \
         .replace('{$dir_result$}', dir_result) \
+        .replace('{$file_template$}', file_template_report) \
         .replace('{$dir_bids$}', dir_bids) \
         .replace('{$dir_bids_temp$}', dir_bids_temp) \
         .replace('{$dir_fmriprep$}', dir_fmriprep) \
@@ -376,7 +381,16 @@ for _, subject in enumerate(subject_unique):
 print(f"All scripts are generated successfully\n")
 # ============================================== #
 
-# ============= start run bash jobs ============ #
+# ============= start run workflow ============ #
+file_bash = os.path.join(dir_script, 'workflow', 'workflow_cluster.sh')
+logFile = os.path.join(dir_abcd_test, 'Log', 'Log_workflow_cluster.log')
+n_thread = 1
+memory = '5G'
+maxProgress=20  # 20 max workflows
+minSpace=500  # 500GB free space at least to submit new jobs
+submit_command = ['qsub', '-terse', '-j', 'y', '-pe', 'threaded', str(n_thread), '-l', 'h_vmem='+memory, '-o', logFile, file_bash, 
+                  '--main', dir_abcd_test, '--scriptCluster', dir_script_cluster, '--maxProgress', str(maxProgress), '--minSpace', str(minSpace)]
+subprocess.run(submit_command)
 
-
+print(f"workflow job is submitted\n")
 # ============================================== #

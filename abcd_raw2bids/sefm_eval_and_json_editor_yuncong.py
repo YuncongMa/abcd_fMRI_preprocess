@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-# Yuncong Ma, 3/4/2024
+# Yuncong Ma, 3/7/2024
 # remove matlab functions from the original sefm_eval_and_json_editor.py
 
 import os, sys, glob, argparse, subprocess, socket, operator, shutil, json, string, re
@@ -154,6 +154,11 @@ def sefm_select(dir_bids, layout, subject, sessions, base_temp_dir, fsl_dir,
     # Add metadata
     func_list = [os.path.join(x.dirname, x.filename).replace(dir_bids, '.') for x in layout.get(subject=subject, session=sessions, datatype='func', extension='.nii.gz')]
     anat_list = [os.path.join(x.dirname, x.filename).replace(dir_bids, '.') for x in layout.get(subject=subject, session=sessions, datatype='anat', extension='.nii.gz')]
+    # remove sub-* level folder
+    for i in range(len(func_list)):
+        func_list[i] = func_list[i].replace('./sub-'+subject+'/', '')
+    for i in range(len(anat_list)):
+        anat_list[i] = anat_list[i].replace('./sub-'+subject+'/', '')
     for pair in pairs:
         pos_nifti = pair[0]
         neg_nifti = pair[1]
@@ -241,12 +246,14 @@ def seperate_concatenated_fm(bids_layout, subject, session, fsl_dir, debug=False
         # add required fields to the orig json as well
         insert_edit_json(orig_json, 'IntendedFor', [])
 
-    if not debug:
-       rm_cmd = ['rm', '-rf', os.path.join(FM_dir, "vol*")]
-       subprocess.run(rm_cmd, env=os.environ)
-       # remove dir-both files which have issues with fmriprep
-       rm_cmd = ['rm', '-rf', os.path.join(FM_dir, "*dir-both*")]
-       subprocess.run(rm_cmd, env=os.environ)
+    # if not debug:
+    rm_cmd = ["rm", "-rf", os.path.join(FM_dir, "vol*")]
+    subprocess.run(rm_cmd, env=os.environ)
+    # remove dir-both files which have issues with fmriprep
+
+    rm_cmd = ["rm", "-rf", os.path.join(FM_dir, "*dir-both*")]
+    print(rm_cmd)
+    subprocess.run(rm_cmd, env=os.environ)
    
     return
 

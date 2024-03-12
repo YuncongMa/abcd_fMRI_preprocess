@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Yuncong Ma, 3/6/2024
+# Yuncong Ma, 3/12/2024
 # Convert raw data in ABCD dataset to BIDS format
 # This bash file does NOT process DTI or task fMRI data
 #
@@ -207,7 +207,9 @@ python $dir_abcd_raw2bids'/correct_jsons.py' \
   -bids $dir_bids \
   -subject $subject \
   -session $session \
-  
+
+# remove dir-both
+rm -rf $dir_bids/$subject_id/$session_id/*dir-both*
 
 #echo "remove all temporary files"
 #rm -rf "${dir_temp_sub}"
