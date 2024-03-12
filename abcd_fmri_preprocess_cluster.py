@@ -99,7 +99,7 @@ dir_result = os.path.join(dir_abcd_test, 'Result')
 
 # steps to run
 # ['raw2bids', 'fmriprep', 'xcpd', 'collect']
-list_step=['fmriprep', 'xcpd']
+list_step=['fmriprep', 'xcpd', 'collect']
 # ============================================== #
 
 # ======= start to extract raw data info ======= #
