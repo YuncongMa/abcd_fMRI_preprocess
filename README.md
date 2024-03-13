@@ -39,10 +39,10 @@ A main python script is used to generate bash scripts for processing ABCD datase
 python abcd_fmri_preprocess_cluster.py
 ```
 
-1. Raw data to BIDS format
-2. fmriprep
-3. XCP-D
-4. Quality control
+1. raw2bids.sh Raw data to BIDS format
+2. fmriprep.sh Run fmriprep on BIDS formatted data
+3. xcpd.sh Postprocess fMRI data to remove noises
+4. collect.sh collect HTML-based reports from fmriprep and xcpd, as well as final preproceesed data
 
 ## Other Tools Included
 ### abcd-dicom2bids 
