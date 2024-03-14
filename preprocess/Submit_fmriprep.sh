@@ -98,7 +98,7 @@ singularity run --cleanenv $file_fmriprep \
  --cifti-output "91k" \
  -w $dir_work \
  --participant-label $sub_id \
- --output-space T1w MNI152NLin6Asym:res-2 MNI152NLin2009cAsym
+ --output-space T1w MNI152NLin6Asym:res-2 MNI152NLin2009cAsym \
  --use-aroma
 
 echo -e "\nFinished at `date +%F-%H:%M:%S`" >> $file_log

@@ -66,7 +66,7 @@ file_template_report = os.path.join(dir_script, 'template', 'template_report.htm
 dir_raw_data = os.path.join(dir_abcd_test, 'Example_Data')
 # temporary folders for BIDS
 dir_bids = os.path.join(dir_abcd_test, 'BIDS')
-dir_bids_temp = os.path.join(dir_abcd_test, 'BIDS_Temp')
+dir_bids_work = os.path.join(dir_abcd_test, 'BIDS_Temp')
 dir_fmriprep = os.path.join(dir_abcd_test, 'fmriprep')
 dir_fmriprep_work = os.path.join(dir_abcd_test, 'fmriprep_work')
 dir_xcpd = os.path.join(dir_abcd_test, 'XCP_D')
@@ -109,8 +109,8 @@ if not os.path.exists(dir_bids):
     os.makedirs(dir_bids)
 # copy BIDS description file
 shutil.copyfile(os.path.join(dir_abcd_raw2bids, 'dataset_description.json'), os.path.join(dir_bids, 'dataset_description.json'))
-if not os.path.exists(dir_bids_temp):
-    os.makedirs(dir_bids_temp)
+if not os.path.exists(dir_bids_work):
+    os.makedirs(dir_bids_work)
 if not os.path.exists(dir_script_cluster):
     os.makedirs(dir_script_cluster)
 if not os.path.exists(dir_xcpd):
@@ -166,7 +166,7 @@ for _, subject in enumerate(subject_unique):
     if not os.path.exists(os.path.join(dir_script_cluster, subject + '_' + session)):
         os.makedirs(os.path.join(dir_script_cluster, subject + '_' + session))
 
-    dir_temp_sub = os.path.join(dir_bids_temp, subject + '_' + session)
+    dir_temp_sub = os.path.join(dir_bids_work, subject + '_' + session)
 
     # Unpack/setup the data for this subject/session
     # only copy anat and rsfMRI data
@@ -191,10 +191,10 @@ for _, subject in enumerate(subject_unique):
         .replace('{$job_submit_command_raw2bids$}', f'bash {file_bash}') \
         .replace('{$subject$}', subject[4:]) \
         .replace('{$session$}', session[4:]) \
-        .replace('{$dir_script_sub$}', os.path.join(dir_script_cluster, subject + '_' + session)) \
-        .replace('{$dir_bids_temp_sub$}', os.path.join(dir_bids_temp, subject + '_' + session)) \
-        .replace('{$dir_fmriprep_temp_sub$}', os.path.join(dir_fmriprep_work, subject + '_' + session)) \
-        .replace('{$dir_xcpd_temp_sub$}', os.path.join(dir_xcpd_work, subject + '_' + session))
+        .replace('{$dir_script_cluster$}', dir_script_cluster) \
+        .replace('{$dir_bids_work$}', dir_bids_work) \
+        .replace('{$dir_fmriprep_work$}', dir_fmriprep_work) \
+        .replace('{$dir_xcpd_work$}', dir_xcpd_work)
     if flag_cluster:
         workflow_content = workflow_content \
             .replace('{$job_submit_command$}', f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
@@ -260,7 +260,6 @@ for _, subject in enumerate(subject_unique):
     memory_fmriprep = 47000
     file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'fmriprep.sh')
     logFile = os.path.join(dir_script_cluster, subject + '_' + session, 'Log_fmriprep.log')
-    dir_fmriprep_work_sub = os.path.join(dir_fmriprep_work, subject + '_' + session)
     if flag_cluster:
         workflow_content = workflow_content \
             .replace('{$job_submit_command_fmriprep$}',
@@ -282,8 +281,9 @@ for _, subject in enumerate(subject_unique):
         .replace('{$max_mem$}', str(memory_fmriprep)) \
         .replace('{$file_fs_license$}', file_fs_license) \
         .replace('{$n_dummy$}', str(n_dummy)) \
-        .replace('{$dir_fmriprep_work_sub$}', dir_fmriprep_work_sub) \
+        .replace('{$dir_fmriprep_work$}', dir_fmriprep_work) \
         .replace('{$subject$}', subject[4:]) \
+        .replace('{$session$}', session[4:]) \
         .replace('{$output_space$}', fmriprep_output_space) \
         .replace('{$file_log$}', logFile)
 
@@ -297,7 +297,6 @@ for _, subject in enumerate(subject_unique):
     memory_xcpd = 10
     file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'xcpd.sh')
     logFile = os.path.join(dir_script_cluster, subject + '_' + session, 'Log_xcpd.log')
-    dir_xcpd_work_sub = os.path.join(dir_xcpd_work, subject + '_' + session)
     if flag_cluster:
         workflow_content = workflow_content \
             .replace('{$job_submit_command_xcpd$}',
@@ -319,6 +318,7 @@ for _, subject in enumerate(subject_unique):
         .replace('{$n_thread$}', str(n_thread)) \
         .replace('{$memory$}', str(memory_xcpd)) \
         .replace('{$subject$}', subject[4:]) \
+        .replace('{$session$}', session[4:]) \
         .replace('{$file_fs_license$}', file_fs_license) \
         .replace('{$n_dummy$}', str(n_dummy)) \
         .replace('{$fwhm$}', str(fwhm)) \
@@ -327,7 +327,7 @@ for _, subject in enumerate(subject_unique):
         .replace('{$bp_high$}', str(bp_high)) \
         .replace('{$bp_order$}', str(bp_order)) \
         .replace('{$fd_threshold$}', str(fd_threshold)) \
-        .replace('{$dir_xcpd_work_sub$}', dir_xcpd_work_sub) \
+        .replace('{$dir_xcpd_work$}', dir_xcpd_work) \
         .replace('{$file_log$}', logFile)
 
     file_bash = open(file_bash, 'w')
@@ -361,12 +361,12 @@ for _, subject in enumerate(subject_unique):
         .replace('{$dir_result$}', dir_result) \
         .replace('{$file_template$}', file_template_report) \
         .replace('{$dir_bids$}', dir_bids) \
-        .replace('{$dir_bids_temp$}', dir_bids_temp) \
+        .replace('{$dir_bids_work$}', dir_bids_work) \
         .replace('{$dir_fmriprep$}', dir_fmriprep) \
-        .replace('{$dir_fmriprep_work_sub$}', dir_fmriprep_work_sub) \
+        .replace('{$dir_fmriprep_work$}', dir_fmriprep_work) \
         .replace('{$dir_xcpd$}', dir_xcpd) \
         .replace('{$dir_xcpd_cifti$}', dir_xcpd_cifti) \
-        .replace('{$dir_xcpd_work_sub$}', dir_xcpd_work_sub)
+        .replace('{$dir_xcpd_work$}', dir_xcpd_work)
 
     file_bash = open(file_bash, 'w')
     print(template_content, file=file_bash)
