@@ -12,6 +12,11 @@ echo -e "Start xcpd at `date +%F-%H:%M:%S`\n"
 
 # ======== settings ======== #
 
+# subject
+subject={$subject$}
+session={$session$}
+folder_label="sub-"$subject"_ses-"$session
+
 # singularity file for xcp_d
 file_xcpd={$file_xcpd$}
 # number of thread
@@ -25,10 +30,14 @@ dir_fmriprep={$dir_fmriprep$}
 dir_xcpd={$dir_xcpd$}
 dir_xcpd_cifti={$dir_xcpd_cifti$}
 # directory to store temporary files
-dir_xcpd_work_sub={$dir_xcpd_work_sub$}
+dir_xcpd_work={$dir_xcpd_work$}
 
-# subject
-subject={$subject$}
+# directory of this fmriprep output: sub-*_ses-*
+dir_fmriprep_sub=$dir_fmriprep/$folder_label
+# for xcpd
+dir_xcpd_sub=$dir_xcpd/$folder_label
+dir_xcpd_cifti_sub=$dir_xcpd_cifti/$folder_label
+dir_xcpd_work_sub=$dir_xcpd_work/$folder_label
 
 # optional settings for the preprocessing
 n_dummy={$n_dummy$}
@@ -63,9 +72,9 @@ singularity run --cleanenv $file_xcpd \
  -f $fd_threshold \
  --skip-parcellation \
  --fs-license-file $file_fs_license \
- --work_dir $dir_xcpd_work \
+ --work_dir $dir_xcpd_work_sub \
  --cifti \
- $dir_fmriprep $dir_xcpd_cifti participant \
+ $dir_fmriprep_sub $dir_xcpd_cifti_sub participant \
  >> $file_log 2>&1
 
 # run volume version
@@ -83,7 +92,7 @@ singularity run --cleanenv $file_xcpd \
  --skip-parcellation \
  --fs-license-file $file_fs_license \
  --work_dir $dir_xcpd_work_sub \
- $dir_fmriprep $dir_xcpd participant \
+ $dir_fmriprep_sub $dir_xcpd_sub participant \
  >> $file_log 2>&1
 
 echo -e "Finish xcpd at `date +%F-%H:%M:%S`\n"

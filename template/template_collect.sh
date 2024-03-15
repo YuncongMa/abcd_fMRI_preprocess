@@ -9,91 +9,103 @@
 
 echo -e "Start collect at `date +%F-%H:%M:%S`\n"
 
-flag_cluster={$flag_cluster$}
-
+# subject
 subject={$subject$}
 session={$session$}
+folder_label="sub-"$subject"_ses-"$session
 
 # folder to store results
-dir_failed={$dir_failed$}/sub-$subject"_ses-"$session
-dir_result={$dir_result$}/sub-$subject"_ses-"$session
+dir_failed={$dir_failed$}/$folder_label
+dir_result={$dir_result$}/$folder_label
+
+# template of final report
+file_template={$file_template$}
 
 # start to check each step
 flag=0
+flag_fmriprep=0
+flag_xcpd=0
 
 # check raw2bids
 # directory of BIDS folder
-dir_bids={$dir_bids$}/sub-$subject/ses-$session
-dir_bids_temp={$dir_bids_temp$}/sub-$subject/ses-$session
+dir_bids={$dir_bids$}
+dir_bids_sub=$idr_bids"/sub-"$subject"/ses-"$session
+dir_bids_work={$dir_bids_work$}
+dir_bids_work_sub=$dir_bids_work"/sub-"$subject"/ses-"$session
 
-if test -d "$dir_bids"; then
-    let spaceUse=$(df -k $dir_bids/ | tail -1 | awk '{print $4}')
-    let spaceUse=$spaceUse/1024  # MB
-    if [ "$spaceUse" -ls "100" ]; then
+if test -d "$dir_bids_sub"; then
+    let spaceUse=$(df -m $dir_bids_sub/ | tail -1 | awk '{print $4}')
+    if [ "$spaceUse" -lt "100" ]; then
         echo 'raw2bids failed\n'
         flag=1
     fi
 fi
-if test -d "$dir_bids_temp"; then
-    let spaceUse=$(df -k $dir_bids_temp/ | tail -1 | awk '{print $4}')
-    let spaceUse=$spaceUse/1024  # MB
-    if [ "$spaceUse" -ls "100" ]; then
+if test -d "$dir_bids_work_sub"; then
+    let spaceUse=$(df -m $dir_bids_work_sub/ | tail -1 | awk '{print $4}')
+    if [ "$spaceUse" -lt "100" ]; then
         flag=1
     fi
 fi
 
 # check fmriprep
 # directory for fmriprep
-dir_fmriprep={$dir_fmriprep$}/sub-$subject
-dir_fmriprep_work_sub={$dir_fmriprep_work_sub$}
+dir_fmriprep={$dir_fmriprep$}
+dir_fmriprep_work={$dir_fmriprep_work$}
+dir_fmriprep_sub=$dir_fmriprep/$folder_label/sub-$subject
+dir_fmriprep_work_sub=$dir_fmriprep_work/$folder_label/sub-$subject
 
-if test -d "$dir_fmriprep";then
-    let spaceUse=$(df -k $dir_fmriprep/ | tail -1 | awk '{print $4}')
-    let spaceUse=$spaceUse/1024  # MB
-    if [ "$spaceUse" -ls "100" ];then
+if test -d "$dir_fmriprep_sub";then
+    let spaceUse=$(df -m $dir_fmriprep_sub/ | tail -1 | awk '{print $4}')
+    if [ "$spaceUse" -lt "100" ]; then
         echo 'fmriprep failed\n'
         flag=1
     fi
 fi
 if test -d "$dir_fmriprep_work_sub";then
-    let spaceUse=$(df -k $dir_fmriprep_work_sub/ | tail -1 | awk '{print $4}')
-    let spaceUse=$spaceUse/1024  # MB
-    if [ "$spaceUse" -ls "100" ]; then
+    let spaceUse=$(df -m $dir_fmriprep_work_sub/ | tail -1 | awk '{print $4}')
+    if [ "$spaceUse" -lt "100" ]; then
         flag=1
     fi
+fi
+# check HTML-based report
+if test -f "$dir_fmriprep_sub.html"; then
+    html_content=$(cat "$dir_fmriprep_sub.html")
+    if [[ "$html_content" == *"No errors to report!"* ]]; then
+        echo "No errors in fmriprep"
+    else
+        flag_fmriprep=1
+        flag=1
+    fi
+else
+    flag=1
 fi
 
 # check xcpd
 # directory of the xcpd output folder
-dir_xcpd={$dir_xcpd$}/sub-$subject
-dir_xcpd_cifti={$dir_xcpd_cifti$}/sub-$subject
-dir_xcpd_work_sub={$dir_xcpd_work_sub$}
+dir_xcpd={$dir_xcpd$}
+dir_xcpd_cifti={$dir_xcpd_cifti$}
+dir_xcpd_work={$dir_xcpd_work$}
+# 
+dir_xcpd_sub=$dir_xcpd/$folder_label"/xcp_d/sub-"$subject
+dir_xcpd_cifti_sub=$dir_xcpd_cifti/$folder_label"/xcp_d/sub-"$subject
+dir_xcpd_work_sub=$dir_xcpd_work/$folder_label
 
 if test -d "$dir_fmriprep_work_sub";then
-    let spaceUse=$(df -k $dir_xcpd/ | tail -1 | awk '{print $4}')
-    let spaceUse=$spaceUse/1024  # MB
-    if [ "$spaceUse" -ls "100" ]; then
+    let spaceUse=$(df -m $dir_fmriprep_work_sub/ | tail -1 | awk '{print $4}')
+    if [ "$spaceUse" -lt "100" ]; then
         echo 'dir_xcpd failed\n'
         flag=1
     fi
 else
     flag=1
 fi
-if test -d "$dir_xcpd_cifti";then
-    let spaceUse=$(df -k $dir_xcpd_cifti/ | tail -1 | awk '{print $4}')
-    let spaceUse=$spaceUse/1024  # MB
-    if [ "$spaceUse" -ls "100" ]; then
+if test -d "$dir_xcpd_cifti_sub";then
+    let spaceUse=$(df -m $dir_xcpd_cifti_sub/ | tail -1 | awk '{print $4}')
+    if [ "$spaceUse" -lt "100" ]; then
         flag=1
     fi
 else
     flag=1
-fi
-if test -d "$dir_xcpd_work_sub";then
-    let spaceUse=$(df -k $dir_xcpd_work_sub/ | tail -1 | awk '{print $4}')
-    let spaceUse=$spaceUse/1024  # MB
-    if [ "$spaceUse" -ls "100" ]; then
-        flag=1
-    fi
 fi
 
 # move to folder if failed
@@ -122,31 +134,93 @@ else
     # move HTML-based reports from fmriprep and xcpd
     mkdir -p $dir_result
     # fmriprep report
-    if [ "$flag_cluster" -eq "1" ]; then
-        rcp -r "$dir_fmriprep/figures" "$dir_result/fmriprep_figures"
-        rcp -r "$dir_fmriprep.html" "$dir_result/fmriprep_report.html"
-    else
-        cp -r "$dir_fmriprep/figures" "$dir_result/fmriprep_figures"
-        cp -r "$dir_fmriprep.html" "$dir_result/fmriprep_report.html"
+    if test -f "$dir_fmriprep_sub.html"; then
+        cp -r "$dir_fmriprep_sub/figures" "$dir_result/fmriprep_figures"
+        cp -r "$dir_fmriprep_sub.html" "$dir_result/fmriprep_report.html"
+        # change contents in the HTML for new file organization
+        html_content=$(cat "$dir_result/fmriprep_report.html")
+        html_content=$(echo "$html_content" | sed "s/sub-${subject}\/figures/fmriprep_figures/g")
+        output_file=$dir_result"/fmriprep_report.html"
+        echo "$html_content" > "$output_file"
     fi
-    # change contents in the HTML for new file organization
-    html_content=$(cat "$dir_result/fmriprep_report.html")
-    html_content=$(echo "$html_content" | sed "s/sub-${subject}\/figures/fmriprep_figures/g")
-    output_file=$dir_result"/fmriprep_report.html"
-    echo "$html_content" > "$output_file"
 
     # xcpd report
-    if [ "$flag_cluster" -eq "1" ]; then
-        rcp -r "$dir_xcpd" "$dir_result/xcpd"
-        rcp -r "$dir_xcpd_cifti" "$dir_result/xcpd_cifti"
-    else
-        cp -r "$dir_xcpd" "$dir_result/xcpd"
-        cp -r "$dir_xcpd_cifti" "$dir_result/xcpd_cifti"
+    if test -f "$dir_xcpd_sub.html"; then
+        cp -r "$dir_xcpd_sub/figures" "$dir_result/xcpd_figures"
+        cp -r "$dir_xcpd_sub.html" "$dir_result/xcpd_report.html"
+        cp -r "$dir_xcpd_cifti_sub/figures" "$dir_result/xcpd_cifti_figures"
+        cp -r "$dir_xcpd_cifti_sub.html" "$dir_result/xcpd_cifti_report.html"
+        # change contents in the HTML for new file organization
+        html_content=$(cat "$dir_result/xcpd_report.html")
+        html_content=$(echo "$html_content" | sed "s/sub-${subject}\/figures/xcpd_figures/g")
+        output_file=$dir_result"/xcpd_report.html"
+        echo "$html_content" > "$output_file"
+        html_content=$(cat "$dir_result/xcpd_cifti_report.html")
+        html_content=$(echo "$html_content" | sed "s/sub-${subject}\/figures/xcpd_cifti_figures/g")
+        output_file=$dir_result"/xcpd_cifti_report.html"
+        echo "$html_content" > "$output_file"
     fi
 
     # final fmri results for subsequent analyses
-
+    # html_content=$(cat "$file_template")
+    # html_content=$(echo "$html_content" | sed "s/{\$subject$}/$subject/g")
+    # html_content=$(echo "$html_content" | sed "s/{\$session$}/$session/g")
+    # if [ "$flag" -eq "0" ]; then
+    #     html_content=$(echo "$html_content" | sed "s/{\$session$}/$session/g")
+    # output_file=$dir_result"/report.html"
+    # echo "$html_content" > "$output_file"
     # additional data for controlling motion and other physiology
+
+    # move preprocessed results and other essential files
+    mkdir -p "$dir_result/result_vol"
+    mkdir -p "$dir_result/result_cifti"
+    file_name_tag=
+    file_name_tag[0]='motion'
+    file_name_tag[1]='outliers'
+    file_name_tag[2]='desc-denoisedSmoothed_bold'
+    for j in $(seq 0 2)
+    do
+        tag="*"${file_name_tag[j]}"*"
+        cp -p $(find "$dir_xcpd_sub/ses-$session/func" -name $tag) "$dir_result/result_vol"
+        cp -p $(find "$dir_xcpd_cifti_sub/ses-$session/func" -name $tag) "$dir_result/result_cifti"
+    done
+
+    # cleanout result folder in fmriprep, XCP_D and XCP_D_cifti
+    # raw2bids
+    if test -d "$dir_bids_work_sub";then
+        echo 'remove temp file in raw2bids which uses'
+        du -sh $dir_bids_sub
+        rm -rf $dir_bids_sub
+    if
+    # fmriprep
+    if test -d "$dir_fmriprep_sub";then
+        echo 'remove temp file in fmriprep which uses'
+        du -sh $dir_fmriprep_work_sub
+        rm -rf $dir_fmriprep_sub
+    fi
+    if test -d "$dir_fmriprep_work_sub";then
+        echo 'remove temp file in fmriprep work which uses'
+        du -sh $dir_fmriprep_work_sub
+        rm -rf $dir_fmriprep_work_sub
+    fi
+    # xcpd
+    if test -d "$dir_xcpd_sub";then
+        echo 'remove temp file in xcpd which uses'
+        du -sh $dir_xcpd_sub
+        rm -rf $dir_xcpd_sub
+    fi
+    if test -d "$dir_xcpd_cifti_sub";then
+        echo 'remove temp file in xcpd cifti which uses'
+        du -sh $dir_xcpd_cifti_sub
+        rm -rf $dir_xcpd_cifti_sub
+    fi
+    if test -d "$dir_xcpd_work_sub";then
+        echo 'remove temp file in xcpd work which uses'
+        du -sh $dir_xcpd_work_sub
+        rm -rf $dir_xcpd_work_sub
+    fi
+    echo 'cleaned out all intermediate files'
+    
 fi
 
 echo -e "Finish collect at `date +%F-%H:%M:%S`\n"

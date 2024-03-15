@@ -10,17 +10,21 @@
 echo -e "Start raw2bids at `date +%F-%H:%M:%S`\n"
 
 # ======== settings ======== #
+
+# subject
+subject={$subject$}
+session={$session$}
+folder_label="sub-"$subject"_ses-"$session
+
 # bash file to do raw2bids in toolbox /abcd_raw2bids/abcd_raw2bids.sh
 file_raw2bids={$file_raw2bids$}
 
-# information of the subject, session, and scan list
-subject={$subject$}
-session={$session$}
+# information of scan list
 list_sub_scan={$list_sub_scan$}
 
 # directories of bids output folder and temporary folder
 dir_bids={$dir_bids$}
-dir_bids_temp={$dir_bids_temp$}
+dir_bids_work={$dir_bids_work$}
 
 # directory to the toolbox sub-folder ./abcd_raw2bids
 dir_abcd_raw2bids={$dir_abcd_raw2bids$}
@@ -40,7 +44,7 @@ bash $file_raw2bids \
  --subject $subject \
  --session $session \
  --bids $dir_bids \
- --tempDir $dir_bids_temp \
+ --tempDir $dir_bids_work \
  --abcd_raw2bids $dir_abcd_raw2bids \
  --scanList $list_sub_scan \
  >> $file_log 2>&1

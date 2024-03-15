@@ -11,6 +11,11 @@ echo -e "Start fmriprep at `date +%F-%H:%M:%S`\n"
 
 # ======== settings ======== #
 
+# subject
+subject={$subject$}
+session={$session$}
+folder_label="sub-"$subject"_ses-"$session
+
 # singularity file for fmriprep
 file_fmriprep={$file_fmriprep$}
 # number of thread to run fmriprep
@@ -23,10 +28,11 @@ dir_bids={$dir_bids$}
 # directory of fmriprep output folder
 dir_fmriprep={$dir_fmriprep$}
 # directory to store temporary files
-dir_fmriprep_work_sub={$dir_fmriprep_work_sub$}
+dir_fmriprep_work={$dir_fmriprep_work$}
 
-# subject
-subject={$subject$}
+# directory of this fmriprep output: sub-*_ses-*
+dir_fmriprep_sub=$dir_fmriprep/$folder_label
+dir_fmriprep_work_sub=$dir_fmriprep_work/$folder_label
 
 # optional settings for the preprocessing
 n_dummy={$n_dummy$}
@@ -45,14 +51,14 @@ file_log={$file_log$}
 unset PYTHONPATH
 
 singularity run --cleanenv $file_fmriprep \
- $dir_bids $dir_fmriprep participant \
+ $dir_bids $dir_fmriprep_sub participant \
  --nthreads $n_thread --mem_mb $max_mem \
  --fs-license-file $file_fs_license \
  --dummy-scans $n_dummy \
  --cifti-output "91k" \
  -w $dir_fmriprep_work_sub \
  --participant-label $subject \
- --output-space $output_space --use-aroma \
+ --output-space $output_space \
  >> $file_log 2>&1
 
 echo -e "Finish fmriprep at `date +%F-%H:%M:%S`\n"

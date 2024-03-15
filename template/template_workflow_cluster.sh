@@ -12,12 +12,18 @@ echo -e "Start workflow.sh : `date +%F-%H:%M:%S`\n"
 # information for subject and session
 subject={$subject$}
 session={$session$}
+folder_label="sub-"$subject"_ses-"$session
 
 # directory for scripts, temporary folder of each step
-dir_script_sub={$dir_script_sub$}
-dir_bids_temp_sub={$dir_bids_temp_sub$}
-dir_fmriprep_temp_sub={$dir_fmriprep_temp_sub$}
-dir_xcpd_temp_sub={$dir_xcpd_temp_sub$}
+dir_script_cluster={$dir_script_cluster$}
+dir_bids_work={$dir_bids_work$}
+dir_fmriprep_work={$dir_fmriprep_work$}
+dir_xcpd_work={$dir_xcpd_work$}
+
+dir_bids_work_sub=$dir_bids_work/$folder_label
+dir_fmriprep_work_sub=$dir_fmriprep_work/$folder_label
+dir_xcpd_work_sub=$dir_xcpd_work/$folder_label
+
 
 # choice of step to run
 # ['raw2bids', 'fmriprep', 'xcpd', 'report']
@@ -39,9 +45,6 @@ if [ "${run_raw2bids}" -eq "1" ]; then
     done
     echo -e "\nFinish raw2bids.sh : `date +%F-%H:%M:%S`\n"
 
-    echo 'remove temp file in raw2bids which uses'
-    du -sh ${dir_bids_temp_sub}
-    rm -rf ${dir_bids_temp_sub}
 fi
 
 # run fmriprep.sh
@@ -56,10 +59,6 @@ if [ "${run_fmriprep}" -eq "1" ]; then
         status=$(qstat | grep "$jobID" | awk '{print $5}')
     done
     echo -e "\nFinish fmriprep.sh : `date +%F-%H:%M:%S`\n"
-
-    echo 'remove temp file in fmriprep which uses'
-    du -sh ${dir_fmriprep_temp_sub}
-    rm -rf ${dir_fmriprep_temp_sub}
 fi
 
 # run xcpd.sh
@@ -74,10 +73,6 @@ if [ "${run_xcpd}" -eq "1" ]; then
         status=$(qstat | grep "$jobID" | awk '{print $5}')
     done
     echo -e "Finish xcpd.sh : `date +%F-%H:%M:%S`\n"
-
-    echo 'remove temp file in xcpd which uses'
-    du -sh ${dir_fmriprep_xcpd_sub}
-    rm -rf ${dir_fmriprep_xcpd_sub}
 fi
 
 # run collect
