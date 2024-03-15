@@ -1,8 +1,14 @@
-# Yuncong Ma, 3/12/2024
-# ABCD raw data to preprocessed data in a cluster environment
+# Yuncong Ma, 3/14/2024
+# This script is to preprocess ABCD fMRI data in a cluster environment
 # This code does NOT work for DTI data
+# This script will submit a workflow_cluster.sh job
+# 
+#
+# command code to run in a cluster environment
 # source activate /cbica/home/mayun/.conda/envs/abcd
 # python /cbica/home/mayun/Projects/ABCD/Script/abcd_fmri_preprocess_cluster.py
+#
+# command to run locally
 # python abcd_fmri_preprocess_cluster.py
 
 
@@ -16,41 +22,50 @@ import numpy as np
 import sys
 
 # ========== settings ========== #
+
+# Test mode on local computer
+flag_cluster = 1
+
+# directories to raw data and result
+# setup the directory of the pNet toolbox folder
+if flag_cluster:
+    dir_script = '/cbica/home/mayun/Projects/ABCD/Script'
+    dir_python = '~/.conda/envs/abcd/bin/python'
+    sys.path.append(dir_script)
+    
+    dir_raw_data = os.path.join(os.path.dirname(dir_script), 'Example_Data')
+    dir_abcd_result = os.path.dirname(dir_script)
+    
+    dir_fsl = '/cbica/software/external/fsl/centos7/5.0.11'
+    dir_conda_env = '/cbica/home/mayun/.conda/envs/abcd'
+else:
+    dir_script = os.path.dirname(os.path.abspath(__name__))
+    
+    dir_raw_data = os.path.join(os.path.dirname(dir_script), 'Example_Data')
+    dir_abcd_result = os.path.dirname(dir_script)
+    
+    dir_fsl = '/usr/local/fsl'
+    dir_conda_env = '/Users/yuncongma/anaconda3/envs/abcd_fmri'
+
+# steps to run
+# ['raw2bids', 'fmriprep', 'xcpd', 'collect']
+list_step=['fmriprep', 'xcpd', 'collect']
+
+# singularity images for fmriprep and xcp-d
+file_fmriprep = os.path.join(dir_abcd_result, 'Tool', 'nipreps_fmriprep_23.0.2.simg')
+file_xcpd = os.path.join(dir_abcd_result, 'Tool', 'xcp_d-0.6.2.simg')
+
 # setting for the cluster environment and conda
 submit_command = 'qsub -terse -j y'
 thread_command = '-pe threaded '
 memory_command = '-l h_vmem='
 log_command = '-o '
 
-# settings for batch processing
-n_subject_per_batch = 20
-flag_clean_temp = 1
-flag_clean_bids = 1
-flag_clean_fmriprep = 1
-
-# Test mode on local computer
-flag_cluster = 1
-
-# setup the directory of the pNet toolbox folder
-if flag_cluster:
-    dir_script = '/cbica/home/mayun/Projects/ABCD/Script'
-    dir_python = '~/.conda/envs/abcd/bin/python'
-    sys.path.append(dir_script)
-    dir_abcd_test = os.path.dirname(dir_script)
-    dir_fsl = '/cbica/software/external/fsl/centos7/5.0.11'
-    dir_conda_env = '/cbica/home/mayun/.conda/envs/abcd'
-else:
-    dir_script = os.path.dirname(os.path.abspath(__name__))
-    dir_abcd_test = os.path.dirname(dir_script)
-    dir_fsl = '/usr/local/fsl'
-    dir_conda_env = '/Users/yuncongma/anaconda3/envs/abcd_fmri'
-
-
-# directories of sub-scripts
+# directories of sub-scripts in toolbox abcd_fmri_preprocess
 dir_abcd_raw2bids = os.path.join(dir_script, 'abcd_raw2bids')
 dir_abcd2bids = os.path.join(dir_script, 'abcd_raw2bids', 'abcd-dicom2bids')
 
-# bash script templates
+# bash script templates in /template
 file_template_raw2bids = os.path.join(dir_script, 'template', 'template_raw2bids.sh')
 file_template_fmriprep = os.path.join(dir_script, 'template', 'template_fmriprep.sh')
 file_template_xcpd = os.path.join(dir_script, 'template', 'template_xcpd.sh')
@@ -61,27 +76,25 @@ else:
     file_template_workflow = os.path.join(dir_script, 'template', 'template_workflow.sh')
 file_template_report = os.path.join(dir_script, 'template', 'template_report.html')
 
-# directories of raw data and folders for different steps in preprocessing
-# raw data
-dir_raw_data = os.path.join(dir_abcd_test, 'Example_Data')
+# directories of folders for different steps in preprocessing
 # temporary folders for BIDS
-dir_bids = os.path.join(dir_abcd_test, 'BIDS')
-dir_bids_work = os.path.join(dir_abcd_test, 'BIDS_Temp')
-dir_fmriprep = os.path.join(dir_abcd_test, 'fmriprep')
-dir_fmriprep_work = os.path.join(dir_abcd_test, 'fmriprep_work')
-dir_xcpd = os.path.join(dir_abcd_test, 'XCP_D')
-dir_xcpd_cifti = os.path.join(dir_abcd_test, 'XCP_D_cifti')
-dir_xcpd_work = os.path.join(dir_abcd_test, 'XCP_D_work')
+dir_bids = os.path.join(dir_abcd_result, 'BIDS')
+dir_bids_work = os.path.join(dir_abcd_result, 'BIDS_Temp')
+dir_fmriprep = os.path.join(dir_abcd_result, 'fmriprep')
+dir_fmriprep_work = os.path.join(dir_abcd_result, 'fmriprep_work')
+dir_xcpd = os.path.join(dir_abcd_result, 'XCP_D')
+dir_xcpd_cifti = os.path.join(dir_abcd_result, 'XCP_D_cifti')
+dir_xcpd_work = os.path.join(dir_abcd_result, 'XCP_D_work')
 
 # directory to save scripts for cluster
-dir_script_cluster = os.path.join(dir_abcd_test, 'Script_Cluster')
+dir_script_cluster = os.path.join(dir_abcd_result, 'Script_Cluster')
 
-# singularity images for fmriprep and xcp-d
-file_fmriprep = os.path.join(dir_abcd_test, 'Tool', 'nipreps_fmriprep_23.0.2.simg')
-file_xcpd = os.path.join(dir_abcd_test, 'Tool', 'xcp_d-0.6.2.simg')
+# final output
+dir_failed = os.path.join(dir_abcd_result, 'Failed')
+dir_result = os.path.join(dir_abcd_result, 'Result')
 
 # setting for fmriprep
-file_fs_license = os.path.join(dir_abcd_test, 'Tool/freesurfer/license.txt')
+file_fs_license = os.path.join(dir_abcd_result, 'Tool/freesurfer/license.txt')
 n_dummy = 10
 fmriprep_output_space = 'MNI152NLin6Asym:res-2'
 # setting for xcpd
@@ -93,18 +106,14 @@ bp_high = 0.1
 bp_order = 4
 fd_threshold = 0.2
 
-# final output
-dir_failed = os.path.join(dir_abcd_test, 'Failed')
-dir_result = os.path.join(dir_abcd_test, 'Result')
-
-# steps to run
-# ['raw2bids', 'fmriprep', 'xcpd', 'collect']
-list_step=['fmriprep', 'xcpd', 'collect']
 # ============================================== #
 
 # ======= start to extract raw data info ======= #
 print(f"Start to extract scan info from raw data folder {dir_raw_data}")
 # create folders
+dir_log = os.path.join(dir_abcd_result, 'Log')
+if not os.path.exists(dir_log):
+    os.makedirs(dir_log)
 if not os.path.exists(dir_bids):
     os.makedirs(dir_bids)
 # copy BIDS description file
@@ -255,7 +264,7 @@ for _, subject in enumerate(subject_unique):
     file_bash.close()
 
     # ====== step 2: fmriprep
-    n_thread = 4
+    n_thread = 8
     memory = '48G'
     memory_fmriprep = 47000
     file_bash = os.path.join(dir_script_cluster, subject + '_' + session, 'fmriprep.sh')
@@ -383,13 +392,13 @@ print(f"All scripts are generated successfully\n")
 
 # ============= start run workflow ============ #
 file_bash = os.path.join(dir_script, 'workflow', 'workflow_cluster.sh')
-logFile = os.path.join(dir_abcd_test, 'Log', 'Log_workflow_cluster.log')
+logFile = os.path.join(dir_abcd_result, 'Log', 'Log_workflow_cluster.log')
 n_thread = 1
 memory = '5G'
 maxProgress=20  # 20 max workflows
 minSpace=500  # 500GB free space at least to submit new jobs
 submit_command = ['qsub', '-terse', '-j', 'y', '-pe', 'threaded', str(n_thread), '-l', 'h_vmem='+memory, '-o', logFile, file_bash, 
-                  '--main', dir_abcd_test, '--scriptCluster', dir_script_cluster, '--maxProgress', str(maxProgress), '--minSpace', str(minSpace)]
+                  '--main', dir_abcd_result, '--scriptCluster', dir_script_cluster, '--maxProgress', str(maxProgress), '--minSpace', str(minSpace)]
 subprocess.run(submit_command)
 
 print(f"workflow job is submitted\n")
