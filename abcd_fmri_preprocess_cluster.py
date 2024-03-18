@@ -49,9 +49,10 @@ else:
 
 # steps to run
 # ['raw2bids', 'fmriprep', 'xcpd', 'collect']
-list_step=['fmriprep', 'xcpd', 'collect']
+list_step=['raw2bids', 'fmriprep', 'xcpd', 'collect']
 
-# singularity images for fmriprep and xcp-d
+# singularity images for dcm2bids, fmriprep and xcp-d
+file_dcm2bids = os.path.join(dir_abcd_result, 'Tool', 'dcm2bids.simg')
 file_fmriprep = os.path.join(dir_abcd_result, 'Tool', 'nipreps_fmriprep_23.0.2.simg')
 file_xcpd = os.path.join(dir_abcd_result, 'Tool', 'xcp_d-0.6.2.simg')
 
@@ -71,7 +72,7 @@ file_template_fmriprep = os.path.join(dir_script, 'template', 'template_fmriprep
 file_template_xcpd = os.path.join(dir_script, 'template', 'template_xcpd.sh')
 file_template_collect = os.path.join(dir_script, 'template', 'template_collect.sh')
 if flag_cluster:
-    file_template_workflow = os.path.join(dir_script, 'template', 'template_workflow_cluster.sh')
+    file_template_workflow = os.path.join(dir_script, 'template', 'template_workflow_sub.sh')
 else:
     file_template_workflow = os.path.join(dir_script, 'template', 'template_workflow.sh')
 file_template_report = os.path.join(dir_script, 'template', 'template_report.html')
@@ -197,7 +198,6 @@ for _, subject in enumerate(subject_unique):
         workflow_content = file.read()
     workflow_content = workflow_content \
         .replace('{$date_time$}', str(date_time)) \
-        .replace('{$job_submit_command_raw2bids$}', f'bash {file_bash}') \
         .replace('{$subject$}', subject[4:]) \
         .replace('{$session$}', session[4:]) \
         .replace('{$dir_script_cluster$}', dir_script_cluster) \
@@ -253,8 +253,9 @@ for _, subject in enumerate(subject_unique):
         .replace('{$subject$}', subject[4:]) \
         .replace('{$session$}', session[4:]) \
         .replace('{$dir_abcd2bids$}', dir_abcd2bids) \
+        .replace('{$file_dcm2bids$}', file_dcm2bids) \
         .replace('{$dir_bids$}', dir_bids) \
-        .replace('{$dir_temp_sub$}', dir_temp_sub) \
+        .replace('{$dir_bids_work$}', dir_bids_work) \
         .replace('{$dir_abcd_raw2bids$}', dir_abcd_raw2bids) \
         .replace('{$list_sub_scan$}', list_sub_scan.name) \
         .replace('{$file_log$}', logFile)

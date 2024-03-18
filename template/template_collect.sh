@@ -29,9 +29,9 @@ flag_xcpd=0
 # check raw2bids
 # directory of BIDS folder
 dir_bids={$dir_bids$}
-dir_bids_sub=$idr_bids"/sub-"$subject"/ses-"$session
+dir_bids_sub=$dir_bids"/sub-"$subject"/ses-"$session
 dir_bids_work={$dir_bids_work$}
-dir_bids_work_sub=$dir_bids_work"/sub-"$subject"/ses-"$session
+dir_bids_work_sub=$dir_bids_work/$folder_label
 
 if test -d "$dir_bids_sub"; then
     let spaceUse=$(df -m $dir_bids_sub/ | tail -1 | awk '{print $4}')
@@ -189,13 +189,13 @@ else
     # raw2bids
     if test -d "$dir_bids_work_sub";then
         echo 'remove temp file in raw2bids which uses'
-        du -sh $dir_bids_sub
-        rm -rf $dir_bids_sub
-    if
+        du -sh $dir_bids_work_sub
+        rm -rf $dir_bids_work_sub
+    fi
     # fmriprep
     if test -d "$dir_fmriprep_sub";then
         echo 'remove temp file in fmriprep which uses'
-        du -sh $dir_fmriprep_work_sub
+        du -sh $dir_fmriprep_sub
         rm -rf $dir_fmriprep_sub
     fi
     if test -d "$dir_fmriprep_work_sub";then
