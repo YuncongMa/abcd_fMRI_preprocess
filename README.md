@@ -29,7 +29,7 @@ brew install dcmtk
 5. Install singularity
 https://github.com/sylabs/singularity/releases
 
-6. Add dcm2bids, fmriprep and xcp_d singularity images (.simg)
+6. Add dcm2bids, dcmtk, fmriprep and xcp_d singularity images (.simg)
 Check script /tool/download_simg.sh
 
 ## Preprocessing Steps
@@ -46,6 +46,8 @@ python abcd_fmri_preprocess_cluster.py
 ## Other Tools Included
 ### abcd-dicom2bids 
 https://github.com/ABCD-STUDY/abcd-dicom2bids/tree/master
+### dcmtk
+https://dicom.offis.de/dcmtk.php.en
 ### fmriprep 
 https://github.com/nipreps/fmriprep
 ### XCP-D 
