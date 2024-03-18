@@ -20,8 +20,6 @@ conda activate abcd
 4. Install additional packages
 ```
 pip install numpy bids nibabel
-conda install -c conda-forge dcm2bids
-conda install -c conda-forge dcm2niix
 conda install -c conda-forge dcmtk
 ```
 For Apple Silicon, use the homebrew to install dcmtk
@@ -31,7 +29,8 @@ brew install dcmtk
 5. Install singularity
 https://github.com/sylabs/singularity/releases
 
-6. Add fmriprep and xcp_d singularity images (.simg)
+6. Add dcm2bids, fmriprep and xcp_d singularity images (.simg)
+Check script /tool/download_simg.sh
 
 ## Preprocessing Steps
 A main python script is used to generate bash scripts for processing ABCD dataset in a cluster environment
