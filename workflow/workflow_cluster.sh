@@ -1,5 +1,5 @@
 #!/bin/bash
-# Yuncong Ma, 3/14/2024
+# Yuncong Ma, 3/19/2024
 # Control the overall workflow in a cluster environment
 # use qsub to run this job
 # dir_main=/cbica/home/mayun/Projects/ABCD
@@ -72,7 +72,7 @@ while [ "$n_progress_done" -lt "$N_sub_ses" ]; do
         let spaceAvail=$(df -k $dir_main | tail -1 | awk '{print $4}')/1024/1024
         if [ "$spaceAvail" -lt "$minSpace" ]; then
             echo -e "\n Warning: available space is only $spaceAvail GB.\nIt is smaller than $minSpace GB.\n Stop submitting new jobs.\n"
-            echo f"$progress_running jobs are in running, and $n_progress_done jobs are finished"
+            echo "$progress_running jobs are in running, and $n_progress_done jobs are finished"
             break
         fi
         # submit a workflow job
@@ -88,7 +88,7 @@ while [ "$n_progress_done" -lt "$N_sub_ses" ]; do
             flag_progress[$i]=1
             progress_jobID[$i]="$jobID"
             ((progress_running++))
-            echo f"$progress_running jobs are in running, and $n_progress_done jobs are finished"
+            echo "$progress_running jobs are in running, and $n_progress_done jobs are finished"
             sleep 0.5
         fi
         # check completion of the job
@@ -99,7 +99,7 @@ while [ "$n_progress_done" -lt "$N_sub_ses" ]; do
                 echo "job is finished for ${list_subject_session[i]}"
                 ((progress_running--))
                 ((n_progress_done++))
-                echo f"$progress_running jobs are in running, and $n_progress_done jobs are finished"
+                echo "$progress_running jobs are in running, and $n_progress_done jobs are finished"
                 flag_progress[$i]=2
             fi
         fi

@@ -14,6 +14,10 @@ subject={$subject$}
 session={$session$}
 folder_label="sub-"$subject"_ses-"$session
 
+# script folder
+dir_script_cluster={$dir_script_cluster$}
+dir_script_cluster_sub=$dir_script_cluster/$folder_label
+
 # folder to store results
 dir_failed={$dir_failed$}/$folder_label
 dir_result={$dir_result$}/$folder_label
@@ -21,18 +25,35 @@ dir_result={$dir_result$}/$folder_label
 # template of final report
 file_template={$file_template$}
 
-# start to check each step
-flag=0
-flag_fmriprep=0
-flag_xcpd=0
-
-# check raw2bids
 # directory of BIDS folder
 dir_bids={$dir_bids$}
 dir_bids_sub=$dir_bids"/sub-"$subject"/ses-"$session
 dir_bids_work={$dir_bids_work$}
 dir_bids_work_sub=$dir_bids_work/$folder_label
 
+# directory for fmriprep
+dir_fmriprep={$dir_fmriprep$}
+dir_fmriprep_work={$dir_fmriprep_work$}
+dir_fmriprep_sub=$dir_fmriprep/$folder_label
+dir_fmriprep_work_sub=$dir_fmriprep_work/$folder_label
+
+# directory of the xcpd output folder
+dir_xcpd={$dir_xcpd$}
+dir_xcpd_cifti={$dir_xcpd_cifti$}
+dir_xcpd_work={$dir_xcpd_work$}
+dir_xcpd_sub=$dir_xcpd/$folder_label
+dir_xcpd_cifti_sub=$dir_xcpd_cifti/$folder_label
+dir_xcpd_work_sub=$dir_xcpd_work/$folder_label
+
+# start to check each step
+flag=0
+flag_fmriprep=0
+flag_xcpd=0
+
+# whether to clean up all intermediate files
+flag_cleanup=1
+
+# check raw2bids
 if test -d "$dir_bids_sub"; then
     let spaceUse=$(df -m $dir_bids_sub/ | tail -1 | awk '{print $4}')
     if [ "$spaceUse" -lt "100" ]; then
@@ -48,12 +69,6 @@ if test -d "$dir_bids_work_sub"; then
 fi
 
 # check fmriprep
-# directory for fmriprep
-dir_fmriprep={$dir_fmriprep$}
-dir_fmriprep_work={$dir_fmriprep_work$}
-dir_fmriprep_sub=$dir_fmriprep/$folder_label/sub-$subject
-dir_fmriprep_work_sub=$dir_fmriprep_work/$folder_label/sub-$subject
-
 if test -d "$dir_fmriprep_sub";then
     let spaceUse=$(df -m $dir_fmriprep_sub/ | tail -1 | awk '{print $4}')
     if [ "$spaceUse" -lt "100" ]; then
@@ -81,15 +96,6 @@ else
 fi
 
 # check xcpd
-# directory of the xcpd output folder
-dir_xcpd={$dir_xcpd$}
-dir_xcpd_cifti={$dir_xcpd_cifti$}
-dir_xcpd_work={$dir_xcpd_work$}
-# 
-dir_xcpd_sub=$dir_xcpd/$folder_label"/xcp_d/sub-"$subject
-dir_xcpd_cifti_sub=$dir_xcpd_cifti/$folder_label"/xcp_d/sub-"$subject
-dir_xcpd_work_sub=$dir_xcpd_work/$folder_label
-
 if test -d "$dir_fmriprep_work_sub";then
     let spaceUse=$(df -m $dir_fmriprep_work_sub/ | tail -1 | awk '{print $4}')
     if [ "$spaceUse" -lt "100" ]; then
@@ -134,9 +140,9 @@ else
     # move HTML-based reports from fmriprep and xcpd
     mkdir -p $dir_result
     # fmriprep report
-    if test -f "$dir_fmriprep_sub.html"; then
-        cp -r "$dir_fmriprep_sub/figures" "$dir_result/fmriprep_figures"
-        cp -r "$dir_fmriprep_sub.html" "$dir_result/fmriprep_report.html"
+    if test -f "$dir_fmriprep_sub/sub-$subject.html"; then
+        cp -r "$dir_fmriprep_sub/sub-$subject/figures" "$dir_result/fmriprep_figures"
+        cp -r "$dir_fmriprep_sub/sub-$subject.html" "$dir_result/fmriprep_report.html"
         # change contents in the HTML for new file organization
         html_content=$(cat "$dir_result/fmriprep_report.html")
         html_content=$(echo "$html_content" | sed "s/sub-${subject}\/figures/fmriprep_figures/g")
@@ -145,11 +151,11 @@ else
     fi
 
     # xcpd report
-    if test -f "$dir_xcpd_sub.html"; then
-        cp -r "$dir_xcpd_sub/figures" "$dir_result/xcpd_figures"
-        cp -r "$dir_xcpd_sub.html" "$dir_result/xcpd_report.html"
-        cp -r "$dir_xcpd_cifti_sub/figures" "$dir_result/xcpd_cifti_figures"
-        cp -r "$dir_xcpd_cifti_sub.html" "$dir_result/xcpd_cifti_report.html"
+    if test -f "$dir_xcpd_sub/xcp_d/sub-$subject.html"; then
+        cp -r "$dir_xcpd_sub/xcp_d/sub-$subject/figures" "$dir_result/xcpd_figures"
+        cp -r "$dir_xcpd_sub/xcp_d/sub-$subject.html" "$dir_result/xcpd_report.html"
+        cp -r "$dir_xcpd_cifti_sub/xcp_d/sub-$subject/figures" "$dir_result/xcpd_cifti_figures"
+        cp -r "$dir_xcpd_cifti_sub/xcp_d/sub-$subject.html" "$dir_result/xcpd_cifti_report.html"
         # change contents in the HTML for new file organization
         html_content=$(cat "$dir_result/xcpd_report.html")
         html_content=$(echo "$html_content" | sed "s/sub-${subject}\/figures/xcpd_figures/g")
@@ -181,45 +187,52 @@ else
     for j in $(seq 0 2)
     do
         tag="*"${file_name_tag[j]}"*"
-        cp -p $(find "$dir_xcpd_sub/ses-$session/func" -name $tag) "$dir_result/result_vol"
-        cp -p $(find "$dir_xcpd_cifti_sub/ses-$session/func" -name $tag) "$dir_result/result_cifti"
+        cp -p $(find "$dir_xcpd_sub/xcp_d/sub-$subject/ses-$session/func" -name $tag) "$dir_result/result_vol"
+        cp -p $(find "$dir_xcpd_cifti_sub/xcp_d/sub-$subject/ses-$session/func" -name $tag) "$dir_result/result_cifti"
     done
 
+    # copy log files from Script_Cluster
+    mkdir -p "$dir_result/log"
+    cp -p $(find "$dir_script_cluster_sub" -name "*Log*") "$dir_result/log"
+
+
     # cleanout result folder in fmriprep, XCP_D and XCP_D_cifti
-    # raw2bids
-    if test -d "$dir_bids_work_sub";then
-        echo 'remove temp file in raw2bids which uses'
-        du -sh $dir_bids_work_sub
-        rm -rf $dir_bids_work_sub
+    if [ $"flag_cleanup" -eq "1" ]; then
+        # raw2bids
+        if test -d "$dir_bids_work_sub";then
+            echo 'remove temp file in raw2bids which uses'
+            du -sh $dir_bids_work_sub
+            rm -rf $dir_bids_work_sub
+        fi
+        # fmriprep
+        if test -d "$dir_fmriprep_sub";then
+            echo 'remove temp file in fmriprep which uses'
+            du -sh $dir_fmriprep_sub
+            rm -rf $dir_fmriprep_sub
+        fi
+        if test -d "$dir_fmriprep_work_sub";then
+            echo 'remove temp file in fmriprep work which uses'
+            du -sh $dir_fmriprep_work_sub
+            rm -rf $dir_fmriprep_work_sub
+        fi
+        # xcpd
+        if test -d "$dir_xcpd_sub";then
+            echo 'remove temp file in xcpd which uses'
+            du -sh $dir_xcpd_sub
+            rm -rf $dir_xcpd_sub
+        fi
+        if test -d "$dir_xcpd_cifti_sub";then
+            echo 'remove temp file in xcpd cifti which uses'
+            du -sh $dir_xcpd_cifti_sub
+            rm -rf $dir_xcpd_cifti_sub
+        fi
+        if test -d "$dir_xcpd_work_sub";then
+            echo 'remove temp file in xcpd work which uses'
+            du -sh $dir_xcpd_work_sub
+            rm -rf $dir_xcpd_work_sub
+        fi
+        echo 'cleaned out all intermediate files'
     fi
-    # fmriprep
-    if test -d "$dir_fmriprep_sub";then
-        echo 'remove temp file in fmriprep which uses'
-        du -sh $dir_fmriprep_sub
-        rm -rf $dir_fmriprep_sub
-    fi
-    if test -d "$dir_fmriprep_work_sub";then
-        echo 'remove temp file in fmriprep work which uses'
-        du -sh $dir_fmriprep_work_sub
-        rm -rf $dir_fmriprep_work_sub
-    fi
-    # xcpd
-    if test -d "$dir_xcpd_sub";then
-        echo 'remove temp file in xcpd which uses'
-        du -sh $dir_xcpd_sub
-        rm -rf $dir_xcpd_sub
-    fi
-    if test -d "$dir_xcpd_cifti_sub";then
-        echo 'remove temp file in xcpd cifti which uses'
-        du -sh $dir_xcpd_cifti_sub
-        rm -rf $dir_xcpd_cifti_sub
-    fi
-    if test -d "$dir_xcpd_work_sub";then
-        echo 'remove temp file in xcpd work which uses'
-        du -sh $dir_xcpd_work_sub
-        rm -rf $dir_xcpd_work_sub
-    fi
-    echo 'cleaned out all intermediate files'
     
 fi
 
