@@ -59,6 +59,7 @@ singularity run --cleanenv $file_fmriprep \
  -w $dir_fmriprep_work_sub \
  --participant-label $subject \
  --output-space $output_space \
+ --use-aroma \
  >> $file_log 2>&1
 
 echo -e "Finish fmriprep at `date +%F-%H:%M:%S`\n"

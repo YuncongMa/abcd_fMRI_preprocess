@@ -1,4 +1,4 @@
-# Yuncong Ma, 3/19/2024
+# Yuncong Ma, 3/20/2024
 # This script is to preprocess ABCD fMRI data in a cluster environment
 # This code does NOT work for DTI data
 # This script will submit a workflow_cluster.sh job
@@ -398,10 +398,10 @@ logFile = os.path.join(dir_abcd_result, 'Log', 'Log_workflow_cluster.log')
 n_thread = 1
 memory = '5G'
 maxProgress=20  # 20 max workflows
-minSpace=500  # 500GB free space at least to submit new jobs
+minSpace=1000  # 1000GB free space at least to submit new jobs
 submit_command = ['qsub', '-terse', '-j', 'y', '-pe', 'threaded', str(n_thread), '-l', 'h_vmem='+memory, '-o', logFile, file_bash, 
                   '--main', dir_abcd_result, '--scriptCluster', dir_script_cluster, '--maxProgress', str(maxProgress), '--minSpace', str(minSpace)]
-#subprocess.run(submit_command)
+subprocess.run(submit_command)
 
 print(f"workflow job is submitted\n")
 # ============================================== #

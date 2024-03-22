@@ -197,7 +197,7 @@ else
 
 
     # cleanout result folder in fmriprep, XCP_D and XCP_D_cifti
-    if [ $"flag_cleanup" -eq "1" ]; then
+    if [ "$flag_cleanup" -eq "1" ]; then
         # raw2bids
         if test -d "$dir_bids_work_sub";then
             echo 'remove temp file in raw2bids which uses'
