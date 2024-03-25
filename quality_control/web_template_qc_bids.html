@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BIDS QC Report</title>
+    <style>
+      .redBorder {
+        border: 8px solid red;
+      }
+
+      .greenBorder {
+        border: 8px solid green;
+      }
+    </style>
+</head>
+<body>
+
+<h1>BIDS QC Report</h1>
+<text style="font-size:24px;">
+    This is a brief report for checking raw data quality for  <br />
+    subject: {$subject$} <br />
+    session: {$session$} <br />
+    abcd_fmri_reprocess is an open-source toolbox <a href="https://github.com/YuncongMa/abcd_fmri_preprocess" target="_blank">(GitHub link)</a> to carry out the fMRI preprocessing for ABCD dataset <br />
+    This QC report is generated at {$report_time$} <br />
+</text>
+
+<text style="font-size:20px;">
+    Tips:  <br />
+    Click on images to label them with red borders as failed, and use the generate manual selection to save.  <br />
+</text>
+
+<h2>Anatomical Images</h2>
+{$content_anat$}
+
+<h2>Field Maps</h2>
+{$content_fmap$}
+
+<h2>fMRI Data</h2>
+{$content_func$}
+
+<h2>Manual QC</h2>
+<input type="file" id="fileInput" accept=".txt" style="font-size:24px;">locate bids_qc_sub-{$subject$}_ses-{$session$}.txt</input> <br />
+<button onclick="loadAndProcessFile()" style="font-size:24px;">Load Manual QC File</button> <br />
+<button onclick="generateAndDownloadReport()" style="font-size:24px;">Save Manual QC</button> <br />
+
+<script>
+const borderColorReport = new Map(); // Use a map to track the latest border color for each image
+
+document.querySelectorAll('.toggleImage').forEach(function(image, index) {
+  // Initialize the map with the image src and its initial border color
+  borderColorReport.set(image.src, 'green'); // Assuming green is the initial border color
+
+  image.addEventListener('click', function() {
+    let newBorderColor = borderColorReport.get(image.src) === 'green' ? 'red' : 'green';
+    borderColorReport.set(image.src, newBorderColor);
+    image.className = 'toggleImage ' + newBorderColor + 'Border'; // Update class to change border
+  });
+});
+
+function generateAndDownloadReport() {
+  let reportContent = '';
+  borderColorReport.forEach((color, src) => {
+    // Adjusting the output based on color
+    let status = color; // Default to the color if no mapping is found
+    if (color === 'red') {
+      status = 'fail';
+    } else if (color === 'green') {
+      status = 'pass';
+    }
+
+    // Extract the file name from the image src
+    const fileNameWithExtension = src.split('/').pop();
+    const fileName = fileNameWithExtension.replace('.jpg', '.nii.gz');
+
+    reportContent += `${fileName}: ${status}\n`;
+  });
+
+  // Create a blob and trigger a download
+  const blob = new Blob([reportContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bids_qc_sub-{$subject$}_ses-{$session$}.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function loadAndProcessFile() {
+  const input = document.getElementById('fileInput');
+  const file = input.files[0];
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const contents = e.target.result;
+      const lines = contents.split('\n');
+      lines.forEach(line => {
+        const [fileName, status] = line.split(':').map(s => s.trim());
+        const imageName = fileName.replace('.nii.gz', '.jpg')
+        // const fileNameQC = `${basePath}/bids_qc_figure/${imageName}`;
+        const fileNameQC = `bids_qc_figure/${imageName}`;
+        const image = document.querySelector(`img[src*="${fileNameQC}"]`);
+          if (image) {
+            const newBorderColor = status === 'fail' ? 'red' : 'green';
+            borderColorReport.set(image.src, newBorderColor);
+            image.className = 'toggleImage ' + newBorderColor + 'Border'; // Update class to change border
+          }
+      });
+    };
+    reader.readAsText(file);
+  }
+}
+
+</script>
+
+</body>
+</html>

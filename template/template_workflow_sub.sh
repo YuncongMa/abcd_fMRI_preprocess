@@ -26,8 +26,9 @@ dir_xcpd_work_sub=$dir_xcpd_work/$folder_label
 
 
 # choice of step to run
-# ['raw2bids', 'fmriprep', 'xcpd', 'report']
+# ['raw2bids', 'bids_qc', 'fmriprep', 'xcpd', 'report']
 run_raw2bids={$run_raw2bids$}
+run_bids_qc={$run_bids_qc$}
 run_fmriprep={$run_fmriprep$}
 run_xcpd={$run_xcpd$}
 run_collect={$run_collect$}
@@ -44,6 +45,21 @@ if [ "${run_raw2bids}" -eq "1" ]; then
         status=$(qstat | grep "$jobID" | awk '{print $5}')
     done
     echo -e "\nFinish raw2bids.sh : `date +%F-%H:%M:%S`\n"
+
+fi
+
+# run bids_qc.sh
+if [ "${run_bids_qc}" -eq "1" ]; then
+    echo -e "\nStart bids_qc.sh : `date +%F-%H:%M:%S`\n"
+    jobID=$({$job_submit_command_bids_qc$})
+
+    status=$(qstat | grep "$jobID" | awk '{print $5}')
+    while [ -n "$status" ];
+    do
+        sleep 60
+        status=$(qstat | grep "$jobID" | awk '{print $5}')
+    done
+    echo -e "\nFinish bids_qc.sh : `date +%F-%H:%M:%S`\n"
 
 fi
 

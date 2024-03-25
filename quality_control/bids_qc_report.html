@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BIDS QC Report</title>
+    <style>
+      .redBorder {
+        border: 8px solid red;
+      }
+
+      .greenBorder {
+        border: 8px solid green;
+      }
+    </style>
+</head>
+<body>
+
+<h1>BIDS QC Report</h1>
+<text style="font-size:24px;">
+    This is a brief report for checking raw data quality for  <br />
+    subject: NDARINV003RTV85 <br />
+    session: baselineYear1Arm1 <br />
+    abcd_fmri_reprocess is an open-source toolbox <a href="https://github.com/YuncongMa/abcd_fmri_preprocess" target="_blank">(GitHub link)</a> to carry out the fMRI preprocessing for ABCD dataset <br />
+    This QC report is generated at 2024-03-25 14:53:47
+</text>
+
+<h2>Anatomical Images</h2>
+
+<p align="center">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_run-01_T1w.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_run-02_T1w.jpg", width="200px">
+  <img src="", style="padding-right: 50px;">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_run-01_T2w.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_run-02_T2w.jpg", width="200px">
+</p>
+
+
+<h2>Field Maps</h2>
+<text style="font-size:20px;">
+
+<p align="center">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-AP_run-01_epi.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-AP_run-02_epi.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-AP_run-03_epi.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-AP_run-04_epi.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-AP_run-05_epi.jpg", width="200px">
+</p>
+
+<p align="center">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-PA_run-01_epi.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-PA_run-02_epi.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-PA_run-03_epi.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-PA_run-04_epi.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-PA_run-05_epi.jpg", width="200px">
+</p>
+<text style="font-size:20px;">
+Field map pair selected in raw2bids: <br />
+sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-AP_run-01_epi.nii.gz <br />
+sub-NDARINV003RTV85_ses-baselineYear1Arm1_dir-PA_run-01_epi.nii.gz <br />
+</p>
+
+
+<h2>fMRI Data</h2>
+<text style="font-size:20px;">
+
+<p align="center">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_task-rest_run-01_bold.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_task-rest_run-02_bold.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_task-rest_run-03_bold.jpg", width="200px">
+  <img class="toggleImage greenBorder", src="bids_qc_figure/sub-NDARINV003RTV85_ses-baselineYear1Arm1_task-rest_run-04_bold.jpg", width="200px">
+</p>
+
+
+<h2>Manual QC</h2>
+<text style="font-size:24px;">bids_qc_sub-NDARINV003RTV85_ses-baselineYear1Arm1.txt</text> <br />
+<button onclick="loadAndProcessFile()" style="font-size:30px;">Load Manual QC File</button> <br />
+<button onclick="generateAndDownloadReport()" style="font-size:30px;">Generate manual selection</button> <br />
+
+<script>
+  const borderColorReport = new Map(); // Use a map to track the latest border color for each image
+
+document.querySelectorAll('.toggleImage').forEach(function(image, index) {
+  // Initialize the map with the image src and its initial border color
+  borderColorReport.set(image.src, 'green'); // Assuming green is the initial border color
+
+  image.addEventListener('click', function() {
+    let newBorderColor = borderColorReport.get(image.src) === 'green' ? 'red' : 'green';
+    borderColorReport.set(image.src, newBorderColor);
+    image.className = 'toggleImage ' + newBorderColor + 'Border'; // Update class to change border
+  });
+});
+
+function generateAndDownloadReport() {
+  let reportContent = '';
+  borderColorReport.forEach((color, src) => {
+    // Adjusting the output based on color
+    let status = color; // Default to the color if no mapping is found
+    if (color === 'red') {
+      status = 'fail';
+    } else if (color === 'green') {
+      status = 'pass';
+    }
+
+    // Extract the file name from the image src
+    const fileNameWithExtension = src.split('/').pop();
+    const fileName = fileNameWithExtension.replace('.jpg', '.nii.gz');
+
+    reportContent += `${fileName}: ${status}\n`;
+  });
+
+  // Create a blob and trigger a download
+  const blob = new Blob([reportContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bids_qc_sub-NDARINV003RTV85_ses-baselineYear1Arm1.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function loadAndProcessFile() {
+  const basePath = document.getElementById('basePath').value
+  const input = document.getElementById('fileInput');
+  const file = '${basePath}/bids_qc_sub-NDARINV003RTV85_ses-baselineYear1Arm1.txt';
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const contents = e.target.result;
+      const lines = contents.split('\n');
+      lines.forEach(line => {
+        const [fileName, status] = line.split(':').map(s => s.trim());
+        const imageName = fileName.replace('.nii.gz', '.jpg')
+        const fileNameQC = `/bids_qc_figure/${imageName}`;
+        if (status === 'fail') {
+          // Assuming images have IDs corresponding to their file names or some way to identify them
+          const image = document.querySelector(`img[src*="${fileNameQC}"]`);
+          if (image) {
+            image.style.border = '8px solid red'; // Change to your desired "fail" border color
+          } else if (status === 'pass') {
+          const image = document.querySelector(`img[src*="${fileNameQC}"]`);
+          if (image) {
+            image.style.border = '8px solid green';
+          }
+        }
+      });
+    };
+    reader.readAsText(file);
+  }
+}
+
+</script>
+
+</body>
+</html>
+

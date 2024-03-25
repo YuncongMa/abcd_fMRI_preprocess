@@ -29,7 +29,11 @@ file_template={$file_template$}
 dir_bids={$dir_bids$}
 dir_bids_sub=$dir_bids"/sub-"$subject"/ses-"$session
 dir_bids_work={$dir_bids_work$}
-dir_bids_work_sub=$dir_bids_work/$folder_label
+dir_bids_work_sub=$dir_bids_work"/sub-"$subject"/ses-"$session
+
+# directory of bids qc
+dir_bids_qc={$dir_bids_qc$}
+dir_bids_qc_sub=$dir_bids_qc/$folder_label
 
 # directory for fmriprep
 dir_fmriprep={$dir_fmriprep$}
@@ -139,6 +143,12 @@ if [ "$flag" -eq "1" ]; then
 else
     # move HTML-based reports from fmriprep and xcpd
     mkdir -p $dir_result
+
+    # bids qc report
+    if test -f "$dir_bids_qc_sub/bids_qc_report.html"; then
+        cp -r "$dir_bids_qc_sub/bids_qc_figure" "$dir_result/bids_qc_figure"
+        cp -r "$dir_bids_qc_sub/bids_qc_report.html" "$dir_result/bids_qc_report.html"
+
     # fmriprep report
     if test -f "$dir_fmriprep_sub/sub-$subject.html"; then
         cp -r "$dir_fmriprep_sub/sub-$subject/figures" "$dir_result/fmriprep_figures"

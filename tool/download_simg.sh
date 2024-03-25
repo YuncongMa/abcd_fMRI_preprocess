@@ -10,22 +10,29 @@ dir_main=/cbica/home/mayun/Projects/ABCD
 
 mkdir -p $dir_main/Tool
 
+cd $dir_main/Tool
+
 echo "Start to download"
 
 
-if [ ! -f "$dir_main/Tool/dcm2bids.simg" ]; then
+if [ ! -f "dcm2bids.simg" ]; then
     echo -e "\nstart to download dcm2bids\n"
-    singularity build $dir_main/Tool/dcm2bids.simg docker://unfmontreal/dcm2bids:latest
+    singularity build dcm2bids.simg docker://unfmontreal/dcm2bids:latest
 fi
 
-if [ ! -f "$dir_main/Tool/nipreps_fmriprep_23.0.2.simg" ]; then
+if [ ! -f "dcmtk.simg" ]; then
+    echo -e "\nstart to download dcmtk\n"
+    singularity build dcmtk.simg https://github.com/DCMTK/dcmtk
+fi
+
+if [ ! -f "nipreps_fmriprep_23.0.2.simg" ]; then
     echo -e "\nstart to download fmriprep\n"
-    singularity build $dir_main/Tool/nipreps_fmriprep_23.0.2.simg docker://poldracklab/fmriprep:23.0.2
+    singularity build nipreps_fmriprep_23.0.2.simg docker://poldracklab/fmriprep:23.0.2
 fi
 
-if [ ! -f "$dir_main/Tool/xcp_d-0.6.2.simg" ]; then
+if [ ! -f "xcp_d-0.6.2.simg" ]; then
     echo -e "\nstart to download xcp_d\n"
-    singularity build $dir_main/Tool/xcp_d-0.6.2.simg docker://pennlinc/xcp_d:0.6.2
+    singularity build xcp_d-0.6.2.simg docker://pennlinc/xcp_d:0.6.2
 fi
 
 echo "All downloads are finished"
