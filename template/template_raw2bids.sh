@@ -44,6 +44,14 @@ source activate {$dir_conda_env$}
 
 # run raw2bids
 
+# clean up previous results
+if test -d "$dir_bids_sub"; then
+    rm -rf $dir_bids_sub/*
+fi
+if test -d "$dir_bids_work_sub"; then
+    rm -rf $dir_bids_work_sub/*
+fi
+
 bash $file_raw2bids \
  --subject $subject \
  --session $session \

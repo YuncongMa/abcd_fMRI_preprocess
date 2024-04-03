@@ -2,49 +2,49 @@
 
 # This bash script is to run collect.sh
 # The script is generated based on the toolbox abcd_fmri_preprocess (/template/template_collect.sh)
-# created on {$date_time$}
+# created on 03/28/2024, 16:07:02
 
 # Use command to submit this job:
-# $ {$job_submit_command$}
+# $ qsub -terse -j y -pe threaded 1 -l h_vmem=5G -o /cbica/home/mayun/Projects/ABCD/Script_Cluster/sub-NDARINV8Z3XXD69_ses-baselineYear1Arm1/Log_collect.log /cbica/home/mayun/Projects/ABCD/Script_Cluster/sub-NDARINV8Z3XXD69_ses-baselineYear1Arm1/collect.sh
 
 echo -e "Start collect at `date +%F-%H:%M:%S`\n"
 
 # subject
-subject={$subject$}
-session={$session$}
+subject=NDARINV8Z3XXD69
+session=baselineYear1Arm1
 folder_label="sub-"$subject"_ses-"$session
 
 # script folder
-dir_script_cluster={$dir_script_cluster$}
+dir_script_cluster=/cbica/home/mayun/Projects/ABCD/Script_Cluster
 dir_script_cluster_sub=$dir_script_cluster/$folder_label
 
 # folder to store results
-dir_failed={$dir_failed$}/$folder_label
-dir_result={$dir_result$}/$folder_label
+dir_failed=/cbica/home/mayun/Projects/ABCD/Failed/$folder_label
+dir_result=/cbica/home/mayun/Projects/ABCD/Result/$folder_label
 
 # template of final report
-file_template={$file_template$}
+file_template=/cbica/home/mayun/Projects/ABCD/Script/template/template_report.html
 
 # directory of BIDS folder
-dir_bids={$dir_bids$}
+dir_bids=/cbica/home/mayun/Projects/ABCD/BIDS
 dir_bids_sub=$dir_bids"/sub-"$subject"/ses-"$session
-dir_bids_work={$dir_bids_work$}
+dir_bids_work=/cbica/home/mayun/Projects/ABCD/BIDS_Temp
 dir_bids_work_sub=$dir_bids_work"/sub-"$subject"/ses-"$session
 
 # directory of bids qc
-dir_bids_qc={$dir_bids_qc$}
+dir_bids_qc=/cbica/home/mayun/Projects/ABCD/BIDS_QC
 dir_bids_qc_sub=$dir_bids_qc/$folder_label
 
 # directory for fmriprep
-dir_fmriprep={$dir_fmriprep$}
-dir_fmriprep_work={$dir_fmriprep_work$}
+dir_fmriprep=/cbica/home/mayun/Projects/ABCD/fmriprep
+dir_fmriprep_work=/cbica/home/mayun/Projects/ABCD/fmriprep_work
 dir_fmriprep_sub=$dir_fmriprep/$folder_label
 dir_fmriprep_work_sub=$dir_fmriprep_work/$folder_label
 
 # directory of the xcpd output folder
-dir_xcpd={$dir_xcpd$}
-dir_xcpd_cifti={$dir_xcpd_cifti$}
-dir_xcpd_work={$dir_xcpd_work$}
+dir_xcpd=/cbica/home/mayun/Projects/ABCD/XCP_D
+dir_xcpd_cifti=/cbica/home/mayun/Projects/ABCD/XCP_D_cifti
+dir_xcpd_work=/cbica/home/mayun/Projects/ABCD/XCP_D_work
 dir_xcpd_sub=$dir_xcpd/$folder_label
 dir_xcpd_cifti_sub=$dir_xcpd_cifti/$folder_label
 dir_xcpd_work_sub=$dir_xcpd_work/$folder_label
@@ -148,7 +148,6 @@ else
     if test -f "$dir_bids_qc_sub/bids_qc_report.html"; then
         cp -r "$dir_bids_qc_sub/bids_qc_figure" "$dir_result/bids_qc_figure"
         cp -r "$dir_bids_qc_sub/bids_qc_report.html" "$dir_result/bids_qc_report.html"
-    fi
 
     # fmriprep report
     if test -f "$dir_fmriprep_sub/sub-$subject.html"; then
@@ -249,8 +248,8 @@ else
         fi
         echo 'cleaned out all intermediate files'
     fi
-    
 fi
 
 echo -e "Finish collect at `date +%F-%H:%M:%S`\n"
+
 

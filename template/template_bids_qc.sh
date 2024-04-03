@@ -24,8 +24,14 @@ dir_bids={$dir_bids$}
 
 # directories of qc output folder and temporary folder
 dir_bids_qc={$dir_bids_qc$}
+dir_bids_qc_sub=$dir_bids_qc/$folder_label
 
 # ======================== #
+
+# clean up previous results
+if test -d "$dir_bids_qc_sub";then
+    rm -rf $dir_bids_qc_sub/*
+fi
 
 # activate conda environment
 

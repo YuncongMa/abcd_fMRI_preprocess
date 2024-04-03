@@ -35,6 +35,12 @@ run_collect={$run_collect$}
 
 # run raw2bids.sh
 if [ "${run_raw2bids}" -eq "1" ]; then
+    # cleanup log file
+    file_log=$dir_script_cluster/$folder_label/Log_raw2bids.log
+    if test -f "$file_log"; then
+        rm -rf $file_log
+    fi
+
     echo -e "\nStart raw2bids.sh : `date +%F-%H:%M:%S`\n"
     jobID=$({$job_submit_command_raw2bids$})
 
@@ -50,6 +56,12 @@ fi
 
 # run bids_qc.sh
 if [ "${run_bids_qc}" -eq "1" ]; then
+    # cleanup log file
+    file_log=$dir_script_cluster/$folder_label/Log_bids_qc.log
+    if test -f "$file_log"; then
+        rm -rf $file_log
+    fi
+
     echo -e "\nStart bids_qc.sh : `date +%F-%H:%M:%S`\n"
     jobID=$({$job_submit_command_bids_qc$})
 
@@ -65,6 +77,12 @@ fi
 
 # run fmriprep.sh
 if [ "${run_fmriprep}" -eq "1" ]; then
+    # cleanup log file
+    file_log=$dir_script_cluster/$folder_label/Log_fmriprep.log
+    if test -f "$file_log"; then
+        rm -rf $file_log
+    fi
+
     echo -e "\nStart fmriprep.sh : `date +%F-%H:%M:%S`\n"
     jobID=$({$job_submit_command_fmriprep$})
 
@@ -79,6 +97,12 @@ fi
 
 # run xcpd.sh
 if [ "${run_xcpd}" -eq "1" ]; then
+    # cleanup log file
+    file_log=$dir_script_cluster/$folder_label/Log_xcpd.log
+    if test -f "$file_log"; then
+        rm -rf $file_log
+    fi
+
     echo -e "Start xcpd.sh : `date +%F-%H:%M:%S`\n"
     jobID=$({$job_submit_command_xcpd$})
 
@@ -93,6 +117,12 @@ fi
 
 # run collect
 if [ "${run_collect}" -eq "1" ]; then
+    # cleanup log file
+    file_log=$dir_script_cluster/$folder_label/Log_collect.log
+    if test -f "$file_log"; then
+        rm -rf $file_log
+    fi
+
     echo -e "Start collect.sh : `date +%F-%H:%M:%S`\n"
     jobID=$({$job_submit_command_collect$})
 

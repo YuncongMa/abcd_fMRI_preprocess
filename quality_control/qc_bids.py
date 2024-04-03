@@ -87,16 +87,13 @@ def main(argv=sys.argv):
     with open(file_template_qc_bids, 'r') as file:
         template_content = file.read()
 
-    # output directory
-    dir_qc_sub = os.path.join(args.dir_qc_bids, "sub-"+args.subject, "ses-"+args.session)
-    dir_qc_sub_figure = os.path.join(dir_qc_sub, 'bids_qc_figure')
-    if not os.path.exists(dir_qc_sub_figure):
-        os.makedirs(dir_qc_sub)
-        os.makedirs(dir_qc_sub_figure)
+    folder_label = "sub-" + args.subject + "_ses-" + args.session
 
-    # copy results from BIDS to BIDS_QC
-    # dir_bids_sub = os.path.join(args.dir_bids, "sub-"+args.subject, "ses-"+args.session)
-    # subprocess.run(['cp', '-r', dir_bids_sub+'/', dir_qc_sub])
+    # output directory
+    dir_qc_sub = os.path.join(args.dir_qc_bids)
+    dir_qc_sub_figure = os.path.join(dir_qc_sub, folder_label)
+    if not os.path.exists(dir_qc_sub_figure):
+        os.makedirs(dir_qc_sub_figure)
 
     # basic info
     template_content = template_content.replace('{$subject$}', args.subject) \
@@ -110,6 +107,8 @@ def main(argv=sys.argv):
     n_datatype = len(list_datatype)
     content = {'anat': '', 'fmap': '<text style="font-size:20px;">\n', 'func': '<text style="font-size:20px;">\n'}
     count_content = np.zeros(n_datatype, dtype=int)
+
+    bids_qc_text = ''
 
     for i in range(n_datatype):
         list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], extension='.nii.gz')
@@ -129,15 +128,18 @@ def main(argv=sys.argv):
             qc_bids_image_sample(file_image, os.path.join(dir_qc_sub_figure, os.path.basename(file_image).replace('.nii.gz', '.jpg')),
                                  figure_title=figure_title, brain_map=MRI_image)
 
+        # prepare figure link and *.txt files
         if list_datatype[i] == 'anat':
             list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], suffix='T1w', extension='.nii.gz')
             content[list_datatype[i]] += '\n<p align="center">'
             for file_image in [os.path.join(x.dirname, x.filename) for x in list_image]:
-                content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="'+os.path.join('bids_qc_figure', os.path.basename(file_image).replace('.nii.gz', '.jpg'))+'", width="200px">'
+                bids_qc_text += os.path.basename(file_image) + ': pass\n'
+                content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="'+os.path.join(folder_label, os.path.basename(file_image).replace('.nii.gz', '.jpg'))+'", width="200px">'
             content[list_datatype[i]] += '\n  <img src="", style="padding-right: 50px;">'
             list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], suffix='T2w', extension='.nii.gz')
             for file_image in [os.path.join(x.dirname, x.filename) for x in list_image]:
-                content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="'+os.path.join('bids_qc_figure', os.path.basename(file_image).replace('.nii.gz', '.jpg'))+'", width="200px">'
+                bids_qc_text += os.path.basename(file_image) + ': pass\n'
+                content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="'+os.path.join(folder_label, os.path.basename(file_image).replace('.nii.gz', '.jpg'))+'", width="200px">'
             content[list_datatype[i]] += '\n</p>\n'
 
         if list_datatype[i] == 'fmap':
@@ -145,23 +147,35 @@ def main(argv=sys.argv):
             list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], direction='AP', extension='.nii.gz')
             content[list_datatype[i]] += '\n<p align="center">'
             for file_image in [os.path.join(x.dirname, x.filename) for x in list_image]:
-                content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="'+os.path.join('bids_qc_figure', os.path.basename(file_image).replace('.nii.gz', '.jpg'))+'", width="200px">'
                 json_path = file_image.replace('.nii.gz', '.json')
                 with open(json_path, 'r') as f:
                     data = json.load(f)
                 if len(data["IntendedFor"]) > 0:
                     flag_fmap_AP = os.path.basename(file_image)
+                    bids_qc_text += os.path.basename(file_image) + ': pass\n'
+                    content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="' + os.path.join(
+                        folder_label, os.path.basename(file_image).replace('.nii.gz', '.jpg')) + '", width="200px">'
+                else:
+                    bids_qc_text += os.path.basename(file_image) + ': fail\n'
+                    content[list_datatype[i]] += '\n  <img class="toggleImage redBorder", src="' + os.path.join(
+                        folder_label, os.path.basename(file_image).replace('.nii.gz', '.jpg')) + '", width="200px">'
             content[list_datatype[i]] += '\n</p>\n'
             flag_fmap_PA = ""
             list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], direction='PA', extension='.nii.gz')
             content[list_datatype[i]] += '\n<p align="center">'
             for file_image in [os.path.join(x.dirname, x.filename) for x in list_image]:
-                content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="'+os.path.join('bids_qc_figure', os.path.basename(file_image).replace('.nii.gz', '.jpg'))+'", width="200px">'
                 json_path = file_image.replace('.nii.gz', '.json')
                 with open(json_path, 'r') as f:
                     data = json.load(f)
                 if len(data["IntendedFor"]) > 0:
                     flag_fmap_PA = os.path.basename(file_image)
+                    bids_qc_text += os.path.basename(file_image) + ': pass\n'
+                    content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="' + os.path.join(
+                        folder_label, os.path.basename(file_image).replace('.nii.gz', '.jpg')) + '", width="200px">'
+                else:
+                    bids_qc_text += os.path.basename(file_image) + ': fail\n'
+                    content[list_datatype[i]] += '\n  <img class="toggleImage redBorder", src="' + os.path.join(
+                        folder_label, os.path.basename(file_image).replace('.nii.gz', '.jpg')) + '", width="200px">'
             content[list_datatype[i]] += '\n</p>\n'
             content[list_datatype[i]] += '<text style="font-size:20px;">\nField map pair selected in raw2bids: <br />\n'+flag_fmap_AP+' <br />\n'+flag_fmap_PA+' <br />\n</p>\n'
 
@@ -169,15 +183,21 @@ def main(argv=sys.argv):
             list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], extension='.nii.gz')
             content[list_datatype[i]] += '\n<p align="center">'
             for file_image in [os.path.join(x.dirname, x.filename) for x in list_image]:
-                content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="'+os.path.join('bids_qc_figure', os.path.basename(file_image).replace('.nii.gz', '.jpg'))+'", width="200px">'
+                bids_qc_text += os.path.basename(file_image) + ': pass\n'
+                content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="'+os.path.join(folder_label, os.path.basename(file_image).replace('.nii.gz', '.jpg'))+'", width="200px">'
             content[list_datatype[i]] += '\n</p>\n'
 
     for i in range(n_datatype):
         template_content = template_content.replace('{$content_'+list_datatype[i]+'$}', content[list_datatype[i]])
 
-    file_report = open(os.path.join(args.dir_qc_bids, "sub-"+args.subject, "ses-"+args.session, 'bids_qc_report.html'), 'w')
+    file_report = open(os.path.join(args.dir_qc_bids, f"{folder_label}.html"), 'w')
     print(template_content, file=file_report)
     file_report.close()
+
+    file_bids_qc_text = os.path.join(dir_qc_sub, f"{folder_label}.txt")
+    file_bids_qc_text = open(file_bids_qc_text, 'w')
+    print(bids_qc_text, file=file_bids_qc_text)
+    file_bids_qc_text.close()
 
     print('Finish qc_bids')
 

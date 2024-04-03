@@ -56,6 +56,17 @@ file_log={$file_log$}
 
 # ======================== #
 
+# clean up previous results
+if test -d "$dir_xcpd_work_sub"; then
+    rm -rf $dir_xcpd_work_sub/*
+fi
+if test -d "$dir_xcpd_cifti_sub"; then
+    rm -rf $dir_xcpd_cifti_sub/*
+fi
+if test -d "$dir_xcpd_sub"; then
+    rm -rf $dir_xcpd_sub/*
+fi
+
 # run xcp-d
 
 # run cifti version

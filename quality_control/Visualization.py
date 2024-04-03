@@ -1,4 +1,4 @@
-# Yuncong Ma, 3/21/2024
+# Yuncong Ma, 3/26/2024
 # Visualization module of pNet
 
 #########################################
@@ -727,8 +727,8 @@ def plot_voxel_map_3view(Anatomy: np.ndarray, Voxel_Map: np.ndarray, center: np.
 
     # Normalize and replicate the anatomical views for RGB channels
     for i in range(3):
-        range_values = np.percentile(Anatomy2D[i][Anatomy2D[i] > 0], [1, 99])
-        Anatomy2D[i] = (Anatomy2D[i] - range_values[0]) / np.diff(range_values) * 0.8
+        range_values = np.percentile(Anatomy2D[i][Anatomy2D[i] > 0], [2, 98])
+        Anatomy2D[i] = (Anatomy2D[i] - range_values[0]) / np.diff(range_values)
         Anatomy2D[i] = np.repeat(Anatomy2D[i][:, :, np.newaxis], 3, axis=2)
 
     # Create the 2D voxel map views
