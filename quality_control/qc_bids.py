@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
-# Yuncong Ma, 3/25/2024
+# Yuncong Ma, 4/3/2024
 # Perform quality control on BIDS formatted MRI data
+# It work on a single subject and one session each time
 
 import os, sys, argparse, re, subprocess
 from bids import BIDSLayout
@@ -96,9 +97,10 @@ def main(argv=sys.argv):
         os.makedirs(dir_qc_sub_figure)
 
     # basic info
-    template_content = template_content.replace('{$subject$}', args.subject) \
-                                       .replace('{$session$}', args.session) \
-                                       .replace('{$report_time$}', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+    template_content = template_content \
+        .replace('{$subject$}', args.subject) \
+        .replace('{$session$}', args.session) \
+        .replace('{$report_time$}', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
 
     # Load the bids layout
     layout = BIDSLayout(args.dir_bids, is_derivative=True)
@@ -177,7 +179,7 @@ def main(argv=sys.argv):
                     content[list_datatype[i]] += '\n  <img class="toggleImage redBorder", src="' + os.path.join(
                         folder_label, os.path.basename(file_image).replace('.nii.gz', '.jpg')) + '", width="200px">'
             content[list_datatype[i]] += '\n</p>\n'
-            content[list_datatype[i]] += '<text style="font-size:20px;">\nField map pair selected in raw2bids: <br />\n'+flag_fmap_AP+' <br />\n'+flag_fmap_PA+' <br />\n</p>\n'
+            # content[list_datatype[i]] += '<text style="font-size:20px;">\nField map pair selected in raw2bids: <br />\n'+flag_fmap_AP+' <br />\n'+flag_fmap_PA+' <br />\n</p>\n'
 
         if list_datatype[i] == 'func':
             list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], extension='.nii.gz')

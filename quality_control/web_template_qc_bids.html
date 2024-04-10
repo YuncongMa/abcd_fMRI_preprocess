@@ -100,7 +100,7 @@ function loadAndProcessFile() {
       lines.forEach(line => {
         const [fileName, status] = line.split(':').map(s => s.trim());
         const imageName = fileName.replace('.nii.gz', '.jpg')
-        const fileNameQC = `{$subject$}_ses-{$session$}/${imageName}`;
+        const fileNameQC = `sub-{$subject$}_ses-{$session$}/${imageName}`;
         const image = document.querySelector(`img[src*="${fileNameQC}"]`);
           if (image) {
             const newBorderColor = status === 'fail' ? 'red' : 'green';
