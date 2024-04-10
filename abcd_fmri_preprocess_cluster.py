@@ -1,4 +1,4 @@
-# Yuncong Ma, 4/3/2024
+# Yuncong Ma, 4/4/2024
 # This script is to preprocess ABCD fMRI data in a cluster environment
 # This code does NOT work for DTI data
 # This script will submit a workflow_cluster.sh job
@@ -24,7 +24,9 @@ import sys
 # ========== settings ========== #
 
 # Test mode on local computer
-flag_cluster = 0
+flag_cluster = 1
+# whether to skip finished jobs
+flag_continue = 1
 
 # directories to raw data and result
 # setup the directory of the pNet toolbox folder
@@ -189,8 +191,8 @@ for _, subject in enumerate(subject_unique):
     dir_temp_sub = os.path.join(dir_bids_work, subject + '_' + session)
 
     # Unpack/setup the data for this subject/session
-    # only copy anat and rsfMRI data
-    Keywords = ['ABCD-T1', 'ABCD-T2', 'FM', 'ABCD-rsfMRI']
+    # only copy anat, fmap, rsfMRI data
+    Keywords = ['ABCD-T1', 'ABCD-T2', 'ABCD-fMRI-FM', 'ABCD-rsfMRI']
     # generate a scan file
     list_sub_scan = os.path.join(dir_script_cluster, subject + '_' + session, 'List_Scan.txt')
     list_sub_scan = open(list_sub_scan, 'w')
@@ -436,16 +438,11 @@ memory = '5G'
 maxProgress = 200  # 25 max workflows
 minSpace = 1000  # 1000GB free space at least to submit new jobs
 
-# submit_command = ['qsub', '-terse', '-j', 'y', '-pe', 'threaded', str(n_thread), '-l', 'h_vmem='+memory, '-o', logFile, file_bash,
-#                   '--main', dir_abcd_result, '--scriptCluster', dir_script_cluster, '--maxProgress', str(maxProgress), '--minSpace', str(minSpace)]
-# subprocess.run(submit_command)
-
 file_bash = os.path.join(dir_script_cluster, 'workflow_cluster.sh')
 logFile = os.path.join(dir_script_cluster, 'Log_workflow_cluster.log')
-file_resubmit_info = os.path.join(dir_script_cluster, 'List_resubmit.txt')
-# file_resubmit_info = ''
+# file_resubmit_info = os.path.join(dir_script_cluster, 'List_resubmit.txt')
+file_resubmit_info = ''
 dir_main = dir_abcd_result
-flag_continue = 1
 
 with open(file_template_workflow_cluster, 'r') as file:
     template_content = file.read()
@@ -467,8 +464,8 @@ file_bash = open(file_bash, 'w')
 print(template_content, file=file_bash)
 file_bash.close()
 
-submit_command = ['qsub', '-terse', '-j', 'y', '-pe', 'threaded', str(n_thread), '-l', 'h_vmem='+memory, '-o', logFile, file_bash]
-subprocess.run(submit_command)
+# submit_command = ['qsub', '-terse', '-j', 'y', '-pe', 'threaded', str(n_thread), '-l', 'h_vmem='+memory, '-o', logFile, file_bash]
+# subprocess.run(submit_command)
 
 print(f"workflow job is submitted\n")
 # ============================================== #
