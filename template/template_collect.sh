@@ -29,7 +29,7 @@ file_template={$file_template$}
 dir_bids={$dir_bids$}
 dir_bids_sub=$dir_bids"/sub-"$subject"/ses-"$session
 dir_bids_work={$dir_bids_work$}
-dir_bids_work_sub=$dir_bids_work"/sub-"$subject"/ses-"$session
+dir_bids_work_sub=$dir_bids_work/$folder_label
 
 # directory of bids qc
 dir_bids_qc={$dir_bids_qc$}

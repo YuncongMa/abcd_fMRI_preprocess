@@ -8,7 +8,7 @@
 # $ {$job_submit_command$}
 
 
-echo -e "\nRunning : workflow_cluster.sh"
+echo -e "\nRunning : workflow_cluster.sh: `date +%F-%H:%M:%S`\n"
 
 # directory for scripts, temporary folder of each step
 dir_script_cluster={$dir_script_cluster$}
@@ -119,4 +119,4 @@ while [ "$n_progress_done" -lt "$N_sub_ses" ]; do
     sleep 60
 done
 
-echo -e "\nFinished workflow_cluster.sh"
+echo -e "\nFinished workflow_cluster.sh: `date +%F-%H:%M:%S`\n"
