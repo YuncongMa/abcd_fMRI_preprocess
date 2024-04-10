@@ -39,9 +39,10 @@ python abcd_fmri_preprocess_cluster.py
 ```
 
 1. raw2bids.sh Raw data to BIDS format
-2. fmriprep.sh Run fmriprep on BIDS formatted data
-3. xcpd.sh Postprocess fMRI data to remove noises
-4. collect.sh collect HTML-based reports from fmriprep and xcpd, as well as final preproceesed data
+2. bids_qc.sh Manual QC on BIDS formatted data
+3. fmriprep.sh Run fmriprep on BIDS formatted data
+4. xcpd.sh Postprocess fMRI data to remove noises
+5. collect.sh collect HTML-based reports from fmriprep and xcpd, as well as final preproceesed data
 
 ## Other Tools Included
 ### abcd-dicom2bids 
