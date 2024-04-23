@@ -1,5 +1,5 @@
 #!/bin/bash
-# Yuncong Ma, 3/19/2024
+# Yuncong Ma, 3/29/2024
 # Control the overall workflow in a cluster environment
 # use qsub to run this job
 # dir_main=/cbica/home/mayun/Projects/ABCD
@@ -53,13 +53,15 @@ mkdir -p $dir_failed
 dir_result=$dir_main/Result
 mkdir -p $dir_result
 
-# get sub
+# get subject session information based on sub folder names in Script_Cluster
 list_subject_session=($(find "$dir_script_cluster" -type d))
 
-
+# number of jobs to submit
 let N_sub_ses=${#list_subject_session[@]}-1
 
+# number of progresses in running
 progress_running=0
+# number of finished progresses
 n_progress_done=0
 
 # use index starting from 0
@@ -68,6 +70,7 @@ progress_jobID=
 
 while [ "$n_progress_done" -lt "$N_sub_ses" ]; do
     for ((i = 1; i <= $N_sub_ses; i++)); do
+
         # check the space available
         let spaceAvail=$(df -k $dir_main | tail -1 | awk '{print $4}')/1024/1024
         if [ "$spaceAvail" -lt "$minSpace" ]; then
@@ -75,6 +78,7 @@ while [ "$n_progress_done" -lt "$N_sub_ses" ]; do
             echo "$progress_running jobs are in running, and $n_progress_done jobs are finished"
             break
         fi
+        
         # submit a workflow job
         if [ "${flag_progress[$i]}" -eq "0" ]; then
             # check the number of running progress
@@ -83,6 +87,11 @@ while [ "$n_progress_done" -lt "$N_sub_ses" ]; do
             fi
             bashFile=${list_subject_session[$i]}"/workflow.sh"
             logFile=${list_subject_session[$i]}"/Log_workflow.log"
+            # clean previous log file
+            if test -f "$logFile"; then
+                rm -rf $logFile
+            fi
+
             jobID=$(qsub -terse -j y -pe threaded 1 -l h_vmem=5G -o $logFile $bashFile)
             echo "submit job for ${list_subject_session[$i]} with jobID=${jobID}"
             flag_progress[$i]=1
@@ -91,6 +100,7 @@ while [ "$n_progress_done" -lt "$N_sub_ses" ]; do
             echo "$progress_running jobs are in running, and $n_progress_done jobs are finished"
             sleep 0.5
         fi
+
         # check completion of the job
         if [ "${flag_progress[$i]}" -eq "1" ]; then
             jobID=${progress_jobID[$i]}

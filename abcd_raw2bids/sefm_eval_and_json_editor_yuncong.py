@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-# Yuncong Ma, 3/7/2024
+# Yuncong Ma, 3/28/2024
 # remove matlab functions from the original sefm_eval_and_json_editor.py
 
 import os, sys, glob, argparse, subprocess, socket, operator, shutil, json, string, re
@@ -452,14 +452,30 @@ def main(argv=sys.argv):
                         run_info = re.search(r'run-\d+', fmap_list[k].filename)
                         run_info = run_info[0]
                         run_info_new = 'run-0'
-                        if 'dir-PA' in data["BidsGuess"][1]:
-                            fmap_dir = 'dir-PA'
-                            count_fmap_PA += 1
-                            run_info_new += str(count_fmap_PA)
-                        elif 'dir-AP' in data["BidsGuess"][1]:
-                            fmap_dir = 'dir-AP'
-                            count_fmap_AP += 1
-                            run_info_new += str(count_fmap_AP)
+                        if "PhaseEncodingDirection" in data.keys():
+                            if data["PhaseEncodingDirection"] == "j-":
+                                fmap_dir = 'dir-AP'
+                                count_fmap_AP += 1
+                                run_info_new += str(count_fmap_AP)
+                            elif data["PhaseEncodingDirection"] == "j":
+                                fmap_dir = 'dir-PA'
+                                count_fmap_PA += 1
+                                run_info_new += str(count_fmap_PA)
+                            else:
+                                print('\nError: cannot determine whether it is AP or PA\n')
+                                return
+                        elif "BidsGuess" in data.keys():
+                            if 'dir-PA' in data["BidsGuess"][1]:
+                                fmap_dir = 'dir-PA'
+                                count_fmap_PA += 1
+                                run_info_new += str(count_fmap_PA)
+                            elif 'dir-AP' in data["BidsGuess"][1]:
+                                fmap_dir = 'dir-AP'
+                                count_fmap_AP += 1
+                                run_info_new += str(count_fmap_AP)
+                            else:
+                                print('\nError: cannot determine whether it is AP or PA\n')
+                                return
                         else:
                             print('\nError: cannot determine whether it is AP or PA\n')
                             return

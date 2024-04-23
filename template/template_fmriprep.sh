@@ -92,5 +92,10 @@ singularity run --cleanenv $file_fmriprep \
    --output-space $output_space \
    >> "$file_log" 2>&1
 
+# clean temp
+if test -d "$dir_fmriprep_work_sub"; then
+    rm -rf $dir_fmriprep_work_sub/*
+fi
+
 
 echo -e "Finish fmriprep at `date +%F-%H:%M:%S`\n"

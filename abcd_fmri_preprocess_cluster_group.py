@@ -1,15 +1,13 @@
 # Yuncong Ma, 4/16/2024
-# This script is to preprocess ABCD fMRI data in a cluster environment
+# This script is to preprocess ABCD fMRI data in ABCD group project
 # This code does NOT work for DTI data
 # This script will submit a workflow_cluster.sh job
 #
 #
 # command code to run in a cluster environment
-# source activate /cbica/home/mayun/.conda/envs/abcd
-# python /cbica/home/mayun/Projects/ABCD/Script/abcd_fmri_preprocess_cluster.py
-#
-# command to run locally
-# python abcd_fmri_preprocess_cluster.py
+# source activate /cbica/projects/ABCD_PreProc/.conda/envs/abcd
+# python /cbica/projects/ABCD_PreProc/rsfmri/Script/abcd_fmri_preprocess_cluster_group.py
+
 
 
 # packages
@@ -32,16 +30,16 @@ flag_continue = 1
 # setup the directory of the pNet toolbox folder
 if flag_cluster:
     dir_script = os.path.dirname(os.path.abspath(__file__))
-    dir_python = '~/.conda/envs/abcd/bin/python'
+    dir_python = '/cbica/projects/ABCD_PreProc/.conda/envs/abcd/bin/python'
     sys.path.append(dir_script)
 
-    # dir_raw_data = os.path.join(os.path.dirname(dir_script), 'Example_Data')
-    dir_raw_data = '/cbica/projects/ABCD_Data_Releases/Data/image03'
+    # dir_raw_data = '/cbica/projects/ABCD_Data_Releases/Data/image03'
+    dir_raw_data = '/cbica/home/mayun/Projects/ABCD/Example_Data'
     
     dir_abcd_result = os.path.dirname(dir_script)
 
     dir_fsl = '/cbica/software/external/fsl/centos7/5.0.11'
-    dir_conda_env = '/cbica/home/mayun/.conda/envs/abcd'
+    dir_conda_env = '/cbica/projects/ABCD_PreProc/.conda/envs/abcd'
 else:
     dir_script = os.path.dirname(os.path.abspath(__name__))
 
@@ -55,11 +53,11 @@ else:
 # array job name
 name_array_job = 'ABCD'
 # max number of concurrent workflow jobs
-max_workflow = 200
+max_workflow = 100
 
 # steps to run
 default_step = ['raw2bids', 'bids_qc', 'fmriprep', 'xcpd', 'collect']
-list_step = ['raw2bids', 'bids_qc', 'collect']
+list_step = ['raw2bids', 'bids_qc', 'fmriprep', 'xcpd', 'collect']
 
 # singularity images for dcm2bids, fmriprep and xcp-d
 file_dcm2bids = os.path.join(dir_abcd_result, 'Tool', 'dcm2bids.simg')

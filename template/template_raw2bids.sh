@@ -28,6 +28,7 @@ list_sub_scan={$list_sub_scan$}
 # directories of bids output folder and temporary folder
 dir_bids={$dir_bids$}
 dir_bids_work={$dir_bids_work$}
+dir_bids_sub=$dir_bids/"sub-$subject"
 dir_bids_work_sub=$dir_bids_work/$folder_label
 
 # directory to the toolbox sub-folder ./abcd_raw2bids
@@ -61,5 +62,10 @@ bash $file_raw2bids \
  --dcm2bids $file_dcm2bids \
  --scanList $list_sub_scan \
  >> $file_log 2>&1
+
+# clean up temp files
+if test -d "$dir_bids_work_sub"; then
+    rm -rf $dir_bids_work_sub/*
+fi
 
 echo -e "Finish raw2bids at `date +%F-%H:%M:%S`\n"

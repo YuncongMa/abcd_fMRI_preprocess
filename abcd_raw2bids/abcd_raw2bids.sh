@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Yuncong Ma, 3/12/2024
+# Yuncong Ma, 3/22/2024
 # Convert raw data in ABCD dataset to BIDS format
 # This bash file does NOT process DTI or task fMRI data
 #
@@ -26,6 +26,7 @@ parse()
    dir_bids=
    dir_temp_sub=
    dir_abcd_raw2bids=
+   file_dcm2bids=
    list_sub_scan=
    file_log='./Log_raw2bids.log'
 
@@ -46,6 +47,9 @@ parse()
             shift 2;;
             --abcd_raw2bids)
                 dir_abcd_raw2bids=$2;
+            shift 2;;
+            --dcm2bids)
+                file_dcm2bids=$2;
             shift 2;;
             --scanList)
                 list_sub_scan=$2;
@@ -75,7 +79,7 @@ echo -e "session = "$session
 echo -e "dir_bids = "$dir_bids 
 echo -e "dir_temp_sub = "$dir_temp_sub 
 echo -e "dir_abcd_raw2bids = "$dir_abcd_raw2bids 
-echo -e "list_sub_scan = "$list_sub_scans 
+echo -e "list_sub_scan = "$list_sub_scan
 
 # add prefix for BIDS format
 subject_id='sub-'$subject
@@ -126,30 +130,39 @@ fi
 # convert DCM to BIDS and move to ABCD directory
 mkdir ${dir_temp_sub}/BIDS_unprocessed
 cp ${dir_abcd_raw2bids}/dataset_description.json ${dir_temp_sub}/BIDS_unprocessed/
-echo ${subject} 
-echo `date`" :RUNNING dcm2bids" 
-dcm2bids -d ${dir_temp_sub}/DCMs/${subject_id} \
- -p ${subject} \
- -s ${session} \
- -c ${dir_abcd_raw2bids}/abcd_dcm2bids.conf \
- -o ${dir_temp_sub}/BIDS_unprocessed \
- --force_dcm2bids --clobber \
- 
 
+echo `date`" :RUNNING dcm2bids"
+# dcm2bids can be run in singularity based on file_dcm2bids or locally installed version
+if test -f "$file_dcm2bids"; then
+    singularity run "$file_dcm2bids" dcm2bids -d ${dir_temp_sub}/DCMs/${subject_id} \
+     -p ${subject} \
+     -s ${session} \
+     -c ${dir_abcd_raw2bids}/abcd_dcm2bids.conf \
+     -o ${dir_temp_sub}/BIDS_unprocessed \
+     --force_dcm2bids --clobber
+else
+    dcm2bids -d ${dir_temp_sub}/DCMs/${subject_id} \
+     -p ${subject} \
+     -s ${session} \
+     -c ${dir_abcd_raw2bids}/abcd_dcm2bids.conf \
+     -o ${dir_temp_sub}/BIDS_unprocessed \
+     --force_dcm2bids --clobber
+fi
+ 
 
 # correct volume order for fMRI data
 if [[ -e ${dir_temp_sub}/BIDS_unprocessed/${subject_id}/${session_id}/func ]]; then
     echo `date`" :CHECKING BIDS ORDERING OF EPIs" 
     i=0
-    while [ "`${dir_abcd_dicom2bids}/src/run_order_fix.py ${dir_temp_sub}/BIDS_unprocessed ${dir_temp_sub}/bids_order_error.json ${dir_temp_sub}/bids_order_map.json --all --subject ${subject_id}`" != ${subject_id} ] && [ $i -ne 3 ]; do
+    while [ "`python ${dir_abcd_dicom2bids}/src/run_order_fix.py ${dir_temp_sub}/BIDS_unprocessed ${dir_temp_sub}/bids_order_error.json ${dir_temp_sub}/bids_order_map.json --all --subject ${subject_id}`" != ${subject_id} ] && [ $i -ne 3 ]; do
         ((i++))
         echo `date`" :  WARNING: BIDS functional scans incorrectly ordered. Attempting to reorder. Attempt #$i" 
     done
-    if [ "`${dir_abcd_dicom2bids}/src/run_order_fix.py ${dir_temp_sub}/BIDS_unprocessed ${dir_temp_sub}/bids_order_error.json ${dir_temp_sub}/bids_order_map.json --all --subject ${subject_id}`" == ${subject_id} ]; then
+    if [ "`python ${dir_abcd_dicom2bids}/src/run_order_fix.py ${dir_temp_sub}/BIDS_unprocessed ${dir_temp_sub}/bids_order_error.json ${dir_temp_sub}/bids_order_map.json --all --subject ${subject_id}`" == ${subject_id} ]; then
         echo `date`" : BIDS functional scans correctly ordered" 
     else
         echo `date`" :  ERROR: BIDS incorrectly ordered even after running run_order_fix.py" 
-        exit
+        # exit
     fi
 fi
 
@@ -209,9 +222,6 @@ python $dir_abcd_raw2bids'/correct_jsons.py' \
   -session $session \
 
 # remove dir-both
-rm -rf $dir_bids/$subject_id/$session_id/*dir-both*
-
-#echo "remove all temporary files"
-#rm -rf "${dir_temp_sub}"
+find $dir_bids/$subject_id/$session_id -name *dir-both* -delete
 
 echo -e "Finished at `date +%F-%H:%M:%S`\n" 

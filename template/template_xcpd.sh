@@ -106,4 +106,9 @@ singularity run --cleanenv $file_xcpd \
  $dir_fmriprep_sub $dir_xcpd_sub participant \
  >> $file_log 2>&1
 
+# clean work
+if test -d "$dir_xcpd_work_sub"; then
+    rm -rf $dir_xcpd_work_sub/*
+fi
+
 echo -e "Finish xcpd at `date +%F-%H:%M:%S`\n"

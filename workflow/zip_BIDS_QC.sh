@@ -1,5 +1,5 @@
 #!/bin/bash
-# Yuncong Ma, 4/9/2024
+# Yuncong Ma, 4/17/2024
 # zip BIDS_QC results by subject-session for easier download
 # bash /cbica/home/mayun/Projects/ABCD/Script/workflow/zip_BIDS_QC.sh
 # submit job
@@ -10,6 +10,8 @@ echo -e "\nStart zip_BIDS_QC.sh: `date +%F-%H:%M:%S`\n"
 
 # skip previously zipped BIDS_QC results
 flag_continue=1
+# delete original files after zipping
+flag_delete=1
 
 # directories for storing zipped BIDS_QC results
 dir_bids_qc=/cbica/home/mayun/Projects/ABCD/BIDS_QC
@@ -31,20 +33,28 @@ cd $dir_bids_qc
 for ((i = 0; i <$n_html; i++)); do
     file_name=`echo "${list_html[$i]}" | cut -d'.' -f1`
     file_name=`basename ${file_name}`
-
+    
     file_zip=$dir_bids_qc_zip/$file_name.zip
     if [ "$flag_continue" -eq "0" ]; then
         if test -f "$file_zip"; then
             rm -rf "$file_zip"
         fi
         echo -e "zip to $file_zip"
-        zip -q -T -m -r $file_zip $file_name $file_name.html $file_name.txt
+        if [ "$flag_delete" -eq "1" ]; then
+            zip -q -T -m -r $file_zip $file_name $file_name.html $file_name.txt
+        else
+            zip -q -T -r $file_zip $file_name $file_name.html $file_name.txt
+        fi
     else
         if test -f "$file_zip"; then
             continue
         else
             echo -e "zip to $file_zip"
-            zip -q -T -m -r $file_zip $file_name $file_name.html $file_name.txt
+            if [ "$flag_delete" -eq "1" ]; then
+                zip -q -T -m -r $file_zip $file_name $file_name.html $file_name.txt
+            else
+                zip -q -T -r $file_zip $file_name $file_name.html $file_name.txt
+            fi
         fi
     fi
 done

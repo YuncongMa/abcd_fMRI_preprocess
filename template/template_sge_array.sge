@@ -1,0 +1,26 @@
+#$ -S /bin/bash
+#$ -N {$name_array_job$}                   # Name of the array job
+#$ -t 1-{$N$}:1                            # Jobs to runs
+#$ -tc {$max_workflow$}                    # Specify the maximum number of concurrent tasks
+
+# Yuncong Ma
+# This script is to submit an SGE array job to control the execution of workflows for all subjects and sessions
+# use submit_sge_array.sh to run this job
+# created on {$date_time$}
+
+# director to the script for running the sge array and all workflows
+dir_script_cluster={$dir_script_cluster$}
+# command to run each workflow
+file_array_job={$file_array_job$}
+# log folder
+dir_log=$dir_script_cluster/log_array_job
+
+# getting commands for running each workflow
+cmd=$(sed -n -e "${SGE_TASK_ID}p" $file_array_job)
+
+cd $dir_log
+
+# run each workflow and output to 
+eval "$cmd" > log_$SGE_TASK_ID.stdout 2> log_$SGE_TASK_ID.stderr
+
+echo "SGE array job $name_array_job is submitted"

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Yuncong Ma, 4/10/2024
-# unzip BIDS_QC_zip results
+# Yuncong Ma, 4/9/2024
+# unzip BIDS_QC_zip results 
 # bash /cbica/home/mayun/Projects/ABCD/Script/workflow/unzip_BIDS_QC.sh
 # submit job
 # dir_main=/cbica/home/mayun/Projects/ABCD
@@ -12,14 +12,13 @@ echo -e "\nStart unzip_BIDS_QC.sh: `date +%F-%H:%M:%S`\n"
 flag_continue=1
 
 # directories for storing zipped BIDS_QC results
-dir_bids_qc=/Volumes/GoPro_8TB/BIDS_QC
-dir_bids_qc_zip=/Volumes/GoPro_8TB/BIDS_QC_zip
+dir_bids_qc=/cbica/home/mayun/Projects/ABCD/BIDS_QC
+dir_bids_qc_zip=/cbica/home/mayun/Projects/ABCD/BIDS_QC_zip
 
 # create folder
 if [[ ! -d "$dir_bids_qc" ]]; then
     mkdir -p $dir_bids_qc
 fi
-
 
 # find zipped files
 list_zip=($(find $dir_bids_qc_zip -maxdepth 1 -type f -name *.zip))
