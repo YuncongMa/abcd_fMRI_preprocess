@@ -12,8 +12,8 @@ echo -e "\nStart unzip_BIDS_QC.sh: `date +%F-%H:%M:%S`\n"
 flag_continue=1
 
 # directories for storing zipped BIDS_QC results
-dir_bids_qc=/cbica/home/mayun/Projects/ABCD/BIDS_QC
-dir_bids_qc_zip=/cbica/home/mayun/Projects/ABCD/BIDS_QC_zip
+dir_bids_qc=/Volumes/Crucial_4TB/ABCD/BIDS_QC
+dir_bids_qc_zip=/Volumes/Crucial_4TB/ABCD/BIDS_QC_zip
 
 # create folder
 if [[ ! -d "$dir_bids_qc" ]]; then
