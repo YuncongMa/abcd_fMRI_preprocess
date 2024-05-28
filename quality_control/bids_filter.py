@@ -141,10 +141,14 @@ def main(argv=sys.argv):
     layout = BIDSLayout(dir_fmriprep_work_sub_bids, is_derivative=True)
 
     # Add metadata
-    func_list = [os.path.join(x.dirname.replace(dir_fmriprep_work_sub_bids, '.'), x.filename).replace(args.dir_bids, '.') for x in layout.get(subject=subject, session=session, datatype='func', extension='.nii.gz')]
-    anat_list = [os.path.join(x.dirname.replace(dir_fmriprep_work_sub_bids, '.'), x.filename).replace(args.dir_bids, '.') for x in layout.get(subject=subject, session=session, datatype='anat', extension='.nii.gz')]
+    func_list = [os.path.join(x.dirname.replace(dir_fmriprep_work_sub_bids, '.'), x.filename).replace('./sub-'+args.subject+'/', '') for x in layout.get(subject=subject, session=session, datatype='func', extension='.nii.gz')]
+    anat_list = [os.path.join(x.dirname.replace(dir_fmriprep_work_sub_bids, '.'), x.filename).replace('./sub-'+args.subject+'/', '') for x in layout.get(subject=subject, session=session, datatype='anat', extension='.nii.gz')]
+    
+    print('Add meta data in keyword IntendedFor')
+    print(func_list)
+    print(anat_list)
 
-    # remove IntendedFor in all field maps
+    # update IntendedFor in all field maps
 
     list_fmap_AP = layout.get(subject=subject, session=session, datatype='fmap', extension='.nii.gz')
     for file_fmap in [os.path.join(x.dirname, x.filename) for x in list_fmap_AP]:

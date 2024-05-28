@@ -107,7 +107,7 @@ def main(argv=sys.argv):
 
     list_datatype = ['anat', 'fmap', 'func']
     n_datatype = len(list_datatype)
-    content = {'anat': '', 'fmap': '<text style="font-size:20px;">\n', 'func': '<text style="font-size:20px;">\n'}
+    content = {'anat': '', 'fmap': '', 'func': ''}
     count_content = np.zeros(n_datatype, dtype=int)
 
     bids_qc_text = ''
@@ -119,10 +119,10 @@ def main(argv=sys.argv):
         for file_image in [os.path.join(x.dirname, x.filename) for x in list_image]:
             MRI_image = load_fmri_scan(file_image, 'Volume', 'Volume (*.nii, *.nii.gz, *.mat)', Concatenation=False)
             count_content[i] += 1
-            content[list_datatype[i]] += '<text style="font-size:20px;">\n' + str(count_content[i]) + '. '
+            content[list_datatype[i]] += '\n<text style="font-size:20px;">\n' + str(count_content[i]) + '. '
             content[list_datatype[i]] += 'File name: ' + os.path.basename(file_image)
             content[list_datatype[i]] += '   image size: ' + str(MRI_image.shape) + '<br/>\n'
-            content[list_datatype[i]] += '\n</text>'
+            content[list_datatype[i]] += '</text>'
             # plot
             subject_session = "sub-"+args.subject + "_ses-"+args.session + "_"
             file_name = os.path.basename(file_image).replace('.nii.gz', '')
@@ -133,7 +133,7 @@ def main(argv=sys.argv):
         # prepare figure link and *.txt files
         if list_datatype[i] == 'anat':
             list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], suffix='T1w', extension='.nii.gz')
-            content[list_datatype[i]] += '\n<p align="center">'
+            content[list_datatype[i]] += '\n\n<p align="center">'
             for file_image in [os.path.join(x.dirname, x.filename) for x in list_image]:
                 bids_qc_text += os.path.basename(file_image) + ': pass\n'
                 content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="'+os.path.join(folder_label, os.path.basename(file_image).replace('.nii.gz', '.jpg'))+'", width="200px">'
@@ -147,7 +147,7 @@ def main(argv=sys.argv):
         if list_datatype[i] == 'fmap':
             flag_fmap_AP = ""
             list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], direction='AP', extension='.nii.gz')
-            content[list_datatype[i]] += '\n<p align="center">'
+            content[list_datatype[i]] += '\n\n<p align="center">'
             for file_image in [os.path.join(x.dirname, x.filename) for x in list_image]:
                 json_path = file_image.replace('.nii.gz', '.json')
                 with open(json_path, 'r') as f:
@@ -164,7 +164,7 @@ def main(argv=sys.argv):
             content[list_datatype[i]] += '\n</p>\n'
             flag_fmap_PA = ""
             list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], direction='PA', extension='.nii.gz')
-            content[list_datatype[i]] += '\n<p align="center">'
+            content[list_datatype[i]] += '\n\n<p align="center">'
             for file_image in [os.path.join(x.dirname, x.filename) for x in list_image]:
                 json_path = file_image.replace('.nii.gz', '.json')
                 with open(json_path, 'r') as f:
@@ -183,7 +183,7 @@ def main(argv=sys.argv):
 
         if list_datatype[i] == 'func':
             list_image = layout.get(subject=args.subject, session=args.session, datatype=list_datatype[i], extension='.nii.gz')
-            content[list_datatype[i]] += '\n<p align="center">'
+            content[list_datatype[i]] += '\n\n<p align="center">'
             for file_image in [os.path.join(x.dirname, x.filename) for x in list_image]:
                 bids_qc_text += os.path.basename(file_image) + ': pass\n'
                 content[list_datatype[i]] += '\n  <img class="toggleImage greenBorder", src="'+os.path.join(folder_label, os.path.basename(file_image).replace('.nii.gz', '.jpg'))+'", width="200px">'

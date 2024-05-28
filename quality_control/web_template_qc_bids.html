@@ -49,7 +49,11 @@ const borderColorReport = new Map(); // Use a map to track the latest border col
 
 document.querySelectorAll('.toggleImage').forEach(function(image, index) {
   // Initialize the map with the image src and its initial border color
-  borderColorReport.set(image.src, 'green'); // Assuming green is the initial border color
+  if (image.className === "toggleImage greenBorder") {
+    borderColorReport.set(image.src, 'green');
+  } else {
+    borderColorReport.set(image.src, 'red');
+  }
 
   image.addEventListener('click', function() {
     let newBorderColor = borderColorReport.get(image.src) === 'green' ? 'red' : 'green';
@@ -75,6 +79,7 @@ function generateAndDownloadReport() {
 
     reportContent += `${fileName}: ${status}\n`;
   });
+  reportContent = reportContent.slice(0, -1);
 
   // Create a blob and trigger a download
   const blob = new Blob([reportContent], { type: 'text/plain' });
