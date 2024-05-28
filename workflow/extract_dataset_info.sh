@@ -1,5 +1,5 @@
 #!/bin/bash
-# Yuncong Ma, 4/16/2024
+# Yuncong Ma, 5/15/2024
 # Get scan info in ABCD dataset
 # bash /cbica/home/mayun/Projects/ABCD/Script/workflow/extract_scan_info.sh dir_raw_data dir_dataset_info
 
@@ -7,7 +7,8 @@ parse()
 {
     # Default setting
     dir_raw_data=
-    dir_dataset_info=
+    file_dataset_info=
+    extension=*.tgz
     
     while [ -n "$1" ];
     do
@@ -15,8 +16,11 @@ parse()
             --raw)
                 dir_raw_data=$2;
             shift 2;;
-            --dir-info)
-                dir_dataset_info=$2;
+            --file-info)
+                file_dataset_info=$2;
+            shift 2;;
+            --extension)
+                extension=$2;
             shift 2;;
             -*)
                 echo "ERROR:no such option $1"
@@ -29,9 +33,7 @@ parse()
 
 parse $*
 
-mkdir -p $dir_dataset_info
-
-find $dir_raw_data -maxdepth 3 -type f -name *.tgz > $dir_dataset_info/List_all_tgz.txt
+find $dir_raw_data -maxdepth 3 -type f -name $extension > $file_dataset_info
 
 
 

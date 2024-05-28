@@ -1,13 +1,15 @@
-# Yuncong Ma, 4/11/2024
+# Yuncong Ma, 5/8/2024
 # clean folders
 # bash /cbica/home/mayun/Projects/ABCD/Script/clean_folder.sh
 # Use the following code to run the cleanup
-# qsub -terse -j y -pe threaded 1 -l h_vmem=4G -o /cbica/home/mayun/Projects/ABCD/Log/Log_clean.log /cbica/home/mayun/Projects/ABCD/Script/clean_folder.sh
+# qsub -terse -j y -pe threaded 1 -l h_vmem=4G -o /cbica/home/mayun/Projects/ABCD/Log/Log_clean.log /cbica/home/mayun/Projects/ABCD/Script/workflow/clean_folder.sh
 
 dir_main=/cbica/home/mayun/Projects/ABCD
 
+rm -rf $dir_main/Example_Data/*
+
 # script
-# rm -rf $dir_main/Script_Cluster/*
+rm -rf $dir_main/Script_Cluster/*
 # raw2bids
 rm -rf $dir_main/BIDS/*
 rm -rf $dir_main/BIDS_Temp/*
