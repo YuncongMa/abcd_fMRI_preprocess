@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-# Yuncong Ma, 3/7/2024
+# Yuncong Ma, 4/23/2024
 # Correct information in BIDs formatted data generated using unpack_and_setup_yuncong.sh
 # adapted from abcd_dicom2bids/src/correct_json.py
 
@@ -117,13 +117,10 @@ def main(argv=None):
                         flag_correction += 1
                         print(json_path + ': No ReconMatrixPE')
 
-                # skip this step due to updated code in sefm_eval_and_json_editor_yuncong.py
-                # Find the IntendedFor field that is a non-empty list
-                # if 'fmap' in root and 'IntendedFor' in data and len(data['IntendedFor']) > 0:
-                #     # Regular expression replace all paths in that list with a relative path to ses-SESSION
-                #     intended_list = data['IntendedFor']
-                #     corrected_intended_list = [re.sub(r'.*(ses-.*_ses-.+)','\g<1>',entry) for entry in intended_list]
-                #     update_json_field(json_path, 'IntendedFor', corrected_intended_list)
+                # Insert IntendedFor field that is a non-existed key
+                # This is for unpaired field maps
+                if 'fmap' in root and 'IntendedFor' not in data:
+                    update_json_field(json_path, 'IntendedFor', [])
 
                 # add SliceTiming in func JSONs
                 if 'func' in root and 'SliceTiming' not in data:
