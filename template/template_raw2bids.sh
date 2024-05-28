@@ -1,4 +1,5 @@
 #!/bin/sh
+#{$job_setting$}
 
 # This bash script is to run raw2bids.sh
 # The script is generated based on the toolbox abcd_fmri_preprocess (/template/template_raw2bids.sh)

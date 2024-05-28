@@ -1,4 +1,5 @@
 #!/bin/sh
+#{$job_setting$}
 
 # This bash script is to run the abcd_fmri_preprocess workflow for a dataset
 # The script is generated based on the toolbox abcd_fmri_preprocess (/template/template_workflow_cluster.sh)

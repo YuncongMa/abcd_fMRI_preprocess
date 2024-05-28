@@ -53,7 +53,7 @@ if [ "${run_raw2bids}" -eq "1" ]; then
 
     lastJob=$jobID
 
-    echo -e "submit raw2bids job ID = $jobID"
+    echo -e "submit raw2bids job ID = $lastJob"
 fi
 
 # run bids_qc.sh
@@ -68,7 +68,7 @@ if [ "${run_bids_qc}" -eq "1" ]; then
 
     lastJob=$jobID
 
-    echo -e "submit bids_qc job ID = $jobID"
+    echo -e "submit bids_qc job ID = $lastJob"
 fi
 
 # run fmriprep.sh
@@ -83,7 +83,7 @@ if [ "${run_fmriprep}" -eq "1" ]; then
 
     lastJob=$jobID
 
-    echo -e "submit fmriprep job ID = $jobID"
+    echo -e "submit fmriprep job ID = $lastJob"
 fi
 
 # run xcpd.sh
@@ -98,7 +98,7 @@ if [ "${run_xcpd}" -eq "1" ]; then
 
     lastJob=$jobID
 
-    echo -e "submit xcpd job ID = $jobID"
+    echo -e "submit xcpd job ID = $lastJob"
 fi
 
 # run collect
@@ -111,16 +111,18 @@ if [ "${run_collect}" -eq "1" ]; then
 
     jobID=$({$job_submit_command_collect$})
 
-    echo -e "submit collect job ID = $jobID"
+    lastJob=$jobID
+
+    echo -e "submit collect job ID = $lastJob"
 fi
 
 # start to check job status
 
-status=$(qstat | grep "$jobID" | awk '{print $5}')
+status=$(qstat | grep "$lastJob" | awk '{print $5}')
 while [ -n "$status" ];
 do
     sleep 60
-    status=$(qstat | grep "$jobID" | awk '{print $5}')
+    status=$(qstat | grep "$lastJob" | awk '{print $5}')
 done
 
 # finish
