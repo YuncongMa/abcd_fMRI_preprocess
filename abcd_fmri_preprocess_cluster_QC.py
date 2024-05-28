@@ -1,15 +1,12 @@
-# Yuncong Ma, 5/7/2024
-# This script is to preprocess ABCD fMRI data in a cluster environment
-# This code does NOT work for DTI data
-# This script will submit a workflow_cluster.sh job
+# Yuncong Ma, 5/20/2024
+# This script is to prepare BIDS formatted data with existing manual QC files
+# This script will output fMRI data in BIDS format as well
+# This script will create a sge array job script in ./Script_Cluster/submit_sge_array.sh
 #
 #
 # command code to run in a cluster environment
 # source activate /cbica/home/mayun/.conda/envs/abcd
-# python /cbica/home/mayun/Projects/ABCD/Script/abcd_fmri_preprocess_cluster.py
-#
-# command to run locally
-# python abcd_fmri_preprocess_cluster.py
+# python /cbica/home/mayun/Projects/ABCD/Script/abcd_fmri_preprocess_cluster_QC.py
 
 
 # packages
@@ -21,6 +18,7 @@ from datetime import datetime
 import numpy as np
 import sys
 
+
 # ========== settings ========== #
 
 # Test mode on local computer
@@ -30,26 +28,16 @@ flag_continue = 1
 
 # directories to raw data and result
 # setup the directory of the pNet toolbox folder
-if flag_cluster:
-    dir_script = os.path.dirname(os.path.abspath(__file__))
-    dir_python = '~/.conda/envs/abcd/bin/python'
-    sys.path.append(dir_script)
+dir_script = os.path.dirname(os.path.abspath(__file__))
+dir_python = '~/.conda/envs/abcd/bin/python'
+sys.path.append(dir_script)
 
-    # dir_raw_data = os.path.join(os.path.dirname(dir_script), 'Example_Data')
-    dir_raw_data = '/cbica/projects/ABCD_Data_Releases/Data/image03'
+dir_raw_data = '/cbica/projects/ABCD_Data_Releases/Data/image03'
     
-    dir_abcd_result = os.path.dirname(dir_script)
+dir_abcd_result = os.path.dirname(dir_script)
 
-    dir_fsl = '/cbica/software/external/fsl/centos7/5.0.11'
-    dir_conda_env = '/cbica/home/mayun/.conda/envs/abcd'
-else:
-    dir_script = os.path.dirname(os.path.abspath(__name__))
-
-    dir_raw_data = os.path.join(os.path.dirname(dir_script), 'Example_Data')
-    dir_abcd_result = os.path.dirname(dir_script)
-
-    dir_fsl = '/usr/local/fsl'
-    dir_conda_env = '/Users/yuncongma/anaconda3/envs/abcd_fmri'
+dir_fsl = '/cbica/software/external/fsl/centos7/5.0.11'
+dir_conda_env = '/cbica/home/mayun/.conda/envs/abcd'
 
 # setting for SGE array job
 # array job name
@@ -57,9 +45,12 @@ name_array_job = 'ABCD'
 # max number of concurrent workflow jobs
 max_workflow = 200
 
+# folder for manual BIDS QC results
+dir_manual_BIDS_QC = os.path.join(dir_abcd_result, 'manual_BIDS_QC_YuncongMa')
+
 # steps to run
 default_step = ['raw2bids', 'bids_qc', 'fmriprep', 'xcpd', 'collect']
-list_step = ['raw2bids', 'bids_qc', 'collect']
+list_step = ['raw2bids', 'bids_qc']
 
 # singularity images for dcm2bids, fmriprep and xcp-d
 file_dcm2bids = os.path.join(dir_abcd_result, 'Tool', 'dcm2bids.simg')
@@ -214,7 +205,7 @@ def keyword_in_string(keywords, text):
     return False
 
 # select files matching keywords
-Keywords_tgz = ['ABCD-T1', 'ABCD-T2', 'ABCD-fMRI-FM', 'ABCD-rsfMRI']
+Keywords_tgz = ['ABCD-T1', 'ABCD-T2', 'ABCD-fMRI-FM']
 list_tgz_2 = []
 list_tgz_basename_2 = []
 for index, file_name in enumerate(list_tgz_basename):
@@ -225,39 +216,30 @@ list_tgz = list_tgz_2
 list_tgz_basename = list_tgz_basename_2
 
 # extract sub-ses info and corresponding scan files
-file_sub_ses = os.path.join(dir_dataset_info, 'List_Subject_Session.txt')
-if not os.path.isfile(file_sub_ses): 
-    list_file = []
-    list_sub_ses = []
+file_sub_ses = os.path.join(dir_dataset_info, 'List_Subject_Session_QC.txt')
+
+# always create new list
+subprocess.run(['bash',os.path.join(dir_script, 'workflow', 'extract_dataset_info.sh'), '--raw', dir_manual_BIDS_QC, '--file-info', file_sub_ses, '--extension', '*.txt'])
+check_file(file_sub_ses)
+    
+file_sub_ses = open(file_sub_ses, 'r')
+list_sub_ses = [os.path.splitext(os.path.basename(line.replace('\n','')))[0] for line in file_sub_ses.readlines()]
+list_sub_ses = np.unique(np.array(list_sub_ses))
+file_sub_ses.close
+# output sub-sess
+file_sub_ses = open(file_sub_ses.name, 'w')
+for _, sub_ses in enumerate(list_sub_ses): 
+    print(sub_ses, file=file_sub_ses)
+file_sub_ses.close
+check_file(file_sub_ses.name)
+list_file = []
+for _, sub_ses in enumerate(list_sub_ses):
+    Keywords = sub_ses.split('_')
+    subject = Keywords[0].split('-')[1]
+    session = Keywords[1].split('-')[1]
     for index, file_name in enumerate(list_tgz_basename):
-        Keywords = file_name.split('_')
-        subject = 'sub-' + Keywords[0]
-        session = 'ses-' + Keywords[1]
-        list_file.append(list_tgz[index])
-        list_sub_ses.append(subject+'_'+session)
-            
-    list_sub_ses = np.unique(np.array(list_sub_ses))
-    
-    # output sub-sess
-    file_sub_ses = open(file_sub_ses, 'w')
-    for _, sub_ses in enumerate(list_sub_ses): 
-        print(sub_ses, file=file_sub_ses)
-    file_sub_ses.close
-    check_file(file_sub_ses.name)
-    
-else:
-    file_sub_ses = open(file_sub_ses, 'r')
-    list_sub_ses = [line.replace('\n','') for line in file_sub_ses.readlines()]
-    list_sub_ses = np.unique(np.array(list_sub_ses))
-    file_sub_ses.close
-    list_file = []
-    for _, sub_ses in enumerate(list_sub_ses):
-        Keywords = sub_ses.split('_')
-        subject = Keywords[0].split('-')[1]
-        session = Keywords[1].split('-')[1]
-        for index, file_name in enumerate(list_tgz_basename):
-            if subject in file_name and session in file_name:
-                list_file.append(list_tgz[index])
+        if subject in file_name and session in file_name:
+            list_file.append(list_tgz[index])
 
 
 print(f'Found {len(list_sub_ses)} subject_session and {len(list_file)} scans\n')

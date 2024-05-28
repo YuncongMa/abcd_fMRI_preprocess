@@ -1,15 +1,12 @@
-# Yuncong Ma, 5/7/2024
-# This script is to preprocess ABCD fMRI data in a cluster environment
+# Yuncong Ma, 5/10/2024
+# This script is to preprocess ABCD fMRI data in ABCD group project
 # This code does NOT work for DTI data
-# This script will submit a workflow_cluster.sh job
+# This script will submit a workflow_cluster.sh job using SLURM array job
 #
 #
 # command code to run in a cluster environment
 # source activate /cbica/home/mayun/.conda/envs/abcd
-# python /cbica/home/mayun/Projects/ABCD/Script/abcd_fmri_preprocess_cluster.py
-#
-# command to run locally
-# python abcd_fmri_preprocess_cluster.py
+# python /cbica/home/mayun/Projects/ABCD/Script/abcd_fmri_preprocess_slurm_array.py
 
 
 # packages
@@ -30,36 +27,27 @@ flag_continue = 1
 
 # directories to raw data and result
 # setup the directory of the pNet toolbox folder
-if flag_cluster:
-    dir_script = os.path.dirname(os.path.abspath(__file__))
-    dir_python = '~/.conda/envs/abcd/bin/python'
-    sys.path.append(dir_script)
+dir_script = os.path.dirname(os.path.abspath(__file__))
+dir_python = '/cbica/projects/ABCD_PreProc/.conda/envs/abcd/bin/python'
+sys.path.append(dir_script)
 
-    # dir_raw_data = os.path.join(os.path.dirname(dir_script), 'Example_Data')
-    dir_raw_data = '/cbica/projects/ABCD_Data_Releases/Data/image03'
+# dir_raw_data = '/cbica/projects/ABCD_Data_Releases/Data/image03'
+dir_raw_data = '/cbica/home/mayun/Projects/ABCD/Example_Data'
     
-    dir_abcd_result = os.path.dirname(dir_script)
+dir_abcd_result = os.path.dirname(dir_script)
 
-    dir_fsl = '/cbica/software/external/fsl/centos7/5.0.11'
-    dir_conda_env = '/cbica/home/mayun/.conda/envs/abcd'
-else:
-    dir_script = os.path.dirname(os.path.abspath(__name__))
-
-    dir_raw_data = os.path.join(os.path.dirname(dir_script), 'Example_Data')
-    dir_abcd_result = os.path.dirname(dir_script)
-
-    dir_fsl = '/usr/local/fsl'
-    dir_conda_env = '/Users/yuncongma/anaconda3/envs/abcd_fmri'
+dir_fsl = '/cbica/software/external/fsl/centos7/5.0.11'
+dir_conda_env = '/cbica/projects/ABCD_PreProc/.conda/envs/abcd'
 
 # setting for SGE array job
 # array job name
 name_array_job = 'ABCD'
 # max number of concurrent workflow jobs
-max_workflow = 200
+max_workflow = 100
 
 # steps to run
 default_step = ['raw2bids', 'bids_qc', 'fmriprep', 'xcpd', 'collect']
-list_step = ['raw2bids', 'bids_qc', 'collect']
+list_step = ['raw2bids', 'bids_qc', 'fmriprep', 'xcpd', 'collect']
 
 # singularity images for dcm2bids, fmriprep and xcp-d
 file_dcm2bids = os.path.join(dir_abcd_result, 'Tool', 'dcm2bids.simg')
@@ -67,11 +55,12 @@ file_fmriprep = os.path.join(dir_abcd_result, 'Tool', 'nipreps_fmriprep_23.2.1.s
 file_xcpd = os.path.join(dir_abcd_result, 'Tool', 'xcp_d-0.6.2.simg')
 
 # setting for the cluster environment and conda
-submit_command = 'qsub -terse -j y'
-thread_command = '-pe threaded '
-memory_command = '-l h_vmem='
-log_command = '-o '
-hold_command = '-hold_jid'
+submit_command = 'sbatch --parsable'
+time_command = '#SBATCH --time={$max_time$}'
+thread_command = '#SBATCH --cpus-per-task={$n_thread$}'
+memory_command = '#SBATCH --mem={$memory$}'
+log_command = '#SBATCH -o {$logFile$}'
+hold_command = '--dependency=afterok:'
 
 # directories of sub-scripts in toolbox abcd_fmri_preprocess
 dir_abcd_raw2bids = os.path.join(dir_script, 'abcd_raw2bids')
@@ -86,10 +75,7 @@ file_template_qc_bids = os.path.join(dir_script, 'template', 'template_bids_qc.s
 file_template_fmriprep = os.path.join(dir_script, 'template', 'template_fmriprep.sh')
 file_template_xcpd = os.path.join(dir_script, 'template', 'template_xcpd.sh')
 file_template_collect = os.path.join(dir_script, 'template', 'template_collect.sh')
-if flag_cluster:
-    file_template_workflow = os.path.join(dir_script, 'template', 'template_workflow_sub.sh')
-else:
-    file_template_workflow = os.path.join(dir_script, 'template', 'template_workflow.sh')
+file_template_workflow = os.path.join(dir_script, 'template', 'template_slurm_workflow_sub.sh')
 file_template_report = os.path.join(dir_script, 'template', 'template_report.html')
 
 # python script
@@ -193,10 +179,10 @@ check_folder(dir_abcd2bids)
 # ======= start to extract raw data info ======= #
 print(f"Start to extract scan info from raw data folder {dir_raw_data}")
 # extract scan info if not exist
-file_list_tgz = os.path.join(dir_dataset_info, 'List_all_tgz.txt')
+file_list_tgz = os.path.join(dir_dataset_info, 'List_tgz_example.txt')
 if not os.path.isfile(file_list_tgz): 
     check_file(os.path.join(dir_script, 'workflow', 'extract_dataset_info.sh'))
-    subprocess.run(['bash',os.path.join(dir_script, 'workflow', 'extract_dataset_info.sh'), '--raw', dir_raw_data, '--dir-info', dir_dataset_info])
+    subprocess.run(['bash',os.path.join(dir_script, 'workflow', 'extract_dataset_info.sh'), '--raw', dir_raw_data, '--file-info', file_list_tgz])
     check_file(file_list_tgz)
 
 list_tgz = []
@@ -205,6 +191,7 @@ list_tgz = [line.replace('\n', '') for line in file_list_tgz.readlines()]
 file_list_tgz.close
 list_tgz = np.sort(np.array(list_tgz))
 list_tgz_basename = [os.path.basename(file_abs) for _, file_abs in enumerate(list_tgz)]
+
 
 # extract information of tgz files, subject and session
 def keyword_in_string(keywords, text):
@@ -225,7 +212,7 @@ list_tgz = list_tgz_2
 list_tgz_basename = list_tgz_basename_2
 
 # extract sub-ses info and corresponding scan files
-file_sub_ses = os.path.join(dir_dataset_info, 'List_Subject_Session.txt')
+file_sub_ses = os.path.join(dir_dataset_info, 'List_Subject_Session_example.txt')
 if not os.path.isfile(file_sub_ses): 
     list_file = []
     list_sub_ses = []
@@ -298,15 +285,21 @@ file_array_job.close
 
 with open(file_template_submit_sge_array, 'r') as file:
         submit_sge_array = file.read()
-file_submit_sge_array = os.path.join(dir_script_cluster, 'submit_sge_array.sh')
-file_submit_array_job = os.path.join(dir_script_cluster, 'sge_array.sge')
+file_submit_sge_array = os.path.join(dir_script_cluster, 'submit_slurm_array.sh')
+file_submit_array_job = os.path.join(dir_script_cluster, 'slurm_array.sge')
 n_thread = 1
 memory = '1G'
+max_time = '24:00:00'
+slurm_option = thread_command.replace('{$n_thread$}', str(n_thread)) + '\n' + \
+        memory_command.replace('{$memory$}', str(memory)) + '\n' + \
+        time_command.replace('{$max_time$}', max_time) + '\n' + \
+        log_command.replace('{$logFile$}', logFile)
 submit_sge_array = submit_sge_array \
+        .replace('#{$job_setting$}',slurm_option) \
         .replace('{$date_time$}', str(date_time)) \
         .replace('{$dir_script_cluster$}', dir_script_cluster) \
         .replace('{$file_submit_sge_array$}', file_submit_sge_array) \
-        .replace('{$submit_command$}', f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {file_submit_array_job}') 
+        .replace('{$submit_command$}', f'{submit_command} {file_submit_array_job}') 
 file_submit_sge_array = open(file_submit_sge_array, 'w')
 print(submit_sge_array, file=file_submit_sge_array)
 file_submit_sge_array.close
@@ -374,14 +367,20 @@ for _, sub_ses in enumerate(list_sub_ses):
 
     # ====== workflow
     n_thread = 1
-    memory = '5G'
+    memory = '1G'
+    max_time = '24:00:00'
     file_bash = os.path.join(dir_script_cluster, sub_ses, 'workflow.sh')
     logFile = os.path.join(dir_script_cluster, sub_ses, 'Log_workflow.log')
     if os.path.exists(logFile):
         subprocess.run(['rm','-rf',logFile])
     with open(file_template_workflow, 'r') as file:
         workflow_content = file.read()
+    slurm_option = thread_command.replace('{$n_thread$}', str(n_thread)) + '\n' + \
+        memory_command.replace('{$memory$}', str(memory)) + '\n' + \
+        time_command.replace('{$max_time$}', max_time) + '\n' + \
+        log_command.replace('{$logFile$}', logFile)
     workflow_content = workflow_content \
+        .replace('#{$job_setting$}', slurm_option) \
         .replace('{$date_time$}', str(date_time)) \
         .replace('{$subject$}', subjectID) \
         .replace('{$session$}', sessionID) \
@@ -391,7 +390,7 @@ for _, sub_ses in enumerate(list_sub_ses):
         .replace('{$dir_xcpd_work$}', dir_xcpd_work)
     if flag_cluster:
         workflow_content = workflow_content \
-            .replace('{$job_submit_command$}', f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+            .replace('{$job_submit_command$}', f'{submit_command} {file_bash}')
     else:
         workflow_content = workflow_content \
             .replace('{$job_submit_command$}', f'bash {file_bash}')
@@ -409,6 +408,7 @@ for _, sub_ses in enumerate(list_sub_ses):
     # ====== step 1: raw data to BIDS
     n_thread = 4
     memory = '10G'
+    max_time = '2:00:00'
     file_bash = os.path.join(dir_script_cluster, sub_ses, 'raw2bids.sh')
     logFile = os.path.join(dir_script_cluster, sub_ses, 'Log_raw2bids.log')
     file_raw2bids = os.path.join(dir_abcd_raw2bids, 'abcd_raw2bids.sh')
@@ -416,11 +416,11 @@ for _, sub_ses in enumerate(list_sub_ses):
         if len(lastJob) == 0:
             workflow_content = workflow_content \
                 .replace('{$job_submit_command_raw2bids$}',
-                     f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+                     f'{submit_command} {file_bash}')
         else:
             workflow_content = workflow_content \
                 .replace('{$job_submit_command_raw2bids$}',
-                     f'{submit_command} {hold_command} {lastJob} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+                     f'{submit_command} {hold_command}{lastJob} {file_bash}')
     else:
         workflow_content = workflow_content \
             .replace('{$job_submit_command_raw2bids$}',
@@ -429,10 +429,15 @@ for _, sub_ses in enumerate(list_sub_ses):
         lastJob = file_bash
     with open(file_template_raw2bids, 'r') as file:
         template_content = file.read()
+    slurm_option = thread_command.replace('{$n_thread$}', str(n_thread)) + '\n' + \
+        memory_command.replace('{$memory$}', str(memory)) + '\n' + \
+        time_command.replace('{$max_time$}', max_time) + '\n' + \
+        log_command.replace('{$logFile$}', logFile)
     template_content = template_content \
+        .replace('#{$job_setting$}', slurm_option) \
         .replace('{$date_time$}', str(date_time)) \
         .replace('{$job_submit_command$}',
-                 f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
+                 f'{submit_command} {file_bash}') \
         .replace('{$dir_conda_env$}', dir_conda_env) \
         .replace('{$file_raw2bids$}', file_raw2bids) \
         .replace('{$subject$}', subjectID) \
@@ -459,11 +464,11 @@ for _, sub_ses in enumerate(list_sub_ses):
         if len(lastJob) == 0:
             workflow_content = workflow_content \
                 .replace('{$job_submit_command_bids_qc$}',
-                     f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+                     f'{submit_command} {file_bash}')
         else:
             workflow_content = workflow_content \
                 .replace('{$job_submit_command_bids_qc$}',
-                     f'{submit_command} {hold_command} $lastJob {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+                     f'{submit_command} {hold_command}$lastJob {file_bash}')
     else:
         workflow_content = workflow_content \
             .replace('{$job_submit_command_bids_qc$}',
@@ -472,10 +477,15 @@ for _, sub_ses in enumerate(list_sub_ses):
         lastJob = file_bash
     with open(file_template_qc_bids, 'r') as file:
         template_content = file.read()
+    slurm_option = thread_command.replace('{$n_thread$}', str(n_thread)) + '\n' + \
+        memory_command.replace('{$memory$}', str(memory)) + '\n' + \
+        time_command.replace('{$max_time$}', max_time) + '\n' + \
+        log_command.replace('{$logFile$}', logFile)
     template_content = template_content \
+        .replace('#{$job_setting$}', slurm_option) \
         .replace('{$date_time$}', str(date_time)) \
         .replace('{$job_submit_command$}',
-                 f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
+                 f'{submit_command} {file_bash}') \
         .replace('{$dir_conda_env$}', dir_conda_env) \
         .replace('{$file_qc_bids$}', file_qc_bids) \
         .replace('{$subject$}', subjectID) \
@@ -492,17 +502,18 @@ for _, sub_ses in enumerate(list_sub_ses):
     n_thread = 8
     memory = '48G'
     memory_fmriprep = 47000
+    max_time = '24:00:00'
     file_bash = os.path.join(dir_script_cluster, sub_ses, 'fmriprep.sh')
     logFile = os.path.join(dir_script_cluster, sub_ses, 'Log_fmriprep.log')
     if flag_cluster:
         if len(lastJob) == 0:
             workflow_content = workflow_content \
                 .replace('{$job_submit_command_fmriprep$}',
-                     f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+                     f'{submit_command} {file_bash}')
         else:
             workflow_content = workflow_content \
                 .replace('{$job_submit_command_fmriprep$}',
-                     f'{submit_command} {hold_command} $lastJob {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+                     f'{submit_command} {hold_command}$lastJob {file_bash}')
     else:
         workflow_content = workflow_content \
             .replace('{$job_submit_command_fmriprep$}',
@@ -511,10 +522,14 @@ for _, sub_ses in enumerate(list_sub_ses):
         lastJob = file_bash
     with open(file_template_fmriprep, 'r') as file:
         template_content = file.read()
+    slurm_option = thread_command.replace('{$n_thread$}', str(n_thread)) + '\n' + \
+        memory_command.replace('{$memory$}', str(memory)) + '\n' + \
+        time_command.replace('{$max_time$}', max_time) + '\n' + \
+        log_command.replace('{$logFile$}', logFile)
     template_content = template_content \
-        .replace('{$date_time$}', str(date_time)) \
+        .replace('#{$job_setting$}', slurm_option) \
         .replace('{$job_submit_command$}',
-                 f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
+                 f'{submit_command} {file_bash}') \
         .replace('{$file_fmriprep$}', file_fmriprep) \
         .replace('{$dir_bids$}', dir_bids) \
         .replace('{$dir_bids_qc$}', dir_bids_qc) \
@@ -539,17 +554,18 @@ for _, sub_ses in enumerate(list_sub_ses):
     n_thread = 8
     memory = '21G'
     memory_xcpd = 20
+    max_time = '2:0:0'
     file_bash = os.path.join(dir_script_cluster, sub_ses, 'xcpd.sh')
     logFile = os.path.join(dir_script_cluster, sub_ses, 'Log_xcpd.log')
     if flag_cluster:
         if len(lastJob) == 0:
             workflow_content = workflow_content \
                 .replace('{$job_submit_command_xcpd$}',
-                     f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+                     f'{submit_command} {file_bash}')
         else:
             workflow_content = workflow_content \
                 .replace('{$job_submit_command_xcpd$}',
-                     f'{submit_command} {hold_command} $lastJob {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+                     f'{submit_command} {hold_command}$lastJob {file_bash}')
     else:
         workflow_content = workflow_content \
             .replace('{$job_submit_command_xcpd$}',
@@ -558,10 +574,15 @@ for _, sub_ses in enumerate(list_sub_ses):
         lastJob = file_bash
     with open(file_template_xcpd, 'r') as file:
         template_content = file.read()
+    slurm_option = thread_command.replace('{$n_thread$}', str(n_thread)) + '\n' + \
+        memory_command.replace('{$memory$}', str(memory)) + '\n' + \
+        time_command.replace('{$max_time$}', max_time) + '\n' + \
+        log_command.replace('{$logFile$}', logFile)
     template_content = template_content \
+        .replace('#{$job_setting$}', slurm_option) \
         .replace('{$date_time$}', str(date_time)) \
         .replace('{$job_submit_command$}',
-                 f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
+                 f'{submit_command} {file_bash}') \
         .replace('{$file_xcpd$}', file_xcpd) \
         .replace('{$dir_xcpd$}', dir_xcpd) \
         .replace('{$dir_xcpd_cifti$}', dir_xcpd_cifti) \
@@ -590,17 +611,18 @@ for _, sub_ses in enumerate(list_sub_ses):
     # Generate HTML-based report files for manual examination
     n_thread = 1
     memory = '5G'
+    max_time = '0:30:00'
     file_bash = os.path.join(dir_script_cluster, sub_ses, 'collect.sh')
     logFile = os.path.join(dir_script_cluster, sub_ses, 'Log_collect.log')
     if flag_cluster:
         if len(lastJob) == 0:
             workflow_content = workflow_content \
                 .replace('{$job_submit_command_collect$}',
-                     f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+                     f'{submit_command} {file_bash}')
         else:
             workflow_content = workflow_content \
                 .replace('{$job_submit_command_collect$}',
-                     f'{submit_command} {hold_command} $lastJob {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}')
+                     f'{submit_command} {hold_command}$lastJob {file_bash}')
     else:
         workflow_content = workflow_content \
             .replace('{$job_submit_command_collect$}',
@@ -609,10 +631,15 @@ for _, sub_ses in enumerate(list_sub_ses):
         lastJob = file_bash
     with open(file_template_collect, 'r') as file:
         template_content = file.read()
+    slurm_option = thread_command.replace('{$n_thread$}', str(n_thread)) + '\n' + \
+        memory_command.replace('{$memory$}', str(memory)) + '\n' + \
+        time_command.replace('{$max_time$}', max_time) + '\n' + \
+        log_command.replace('{$logFile$}', logFile)
     template_content = template_content \
+        .replace('#{$job_setting$}', slurm_option) \
         .replace('{$date_time$}', str(date_time)) \
         .replace('{$job_submit_command$}',
-                 f'{submit_command} {thread_command}{n_thread} {memory_command}{memory} {log_command}{logFile} {file_bash}') \
+                 f'{submit_command} {file_bash}') \
         .replace('{$subject$}', subjectID) \
         .replace('{$session$}', sessionID) \
         .replace('{$dir_script_cluster$}', dir_script_cluster) \
