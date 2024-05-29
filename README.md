@@ -49,15 +49,15 @@ python abcd_fmri_preprocess_slurm_array.py
 ```
 
 ### 1. raw2bids.sh 
-Convert raw data (*.tgz) to BIDS format (data in subfolders /anat/, /fmap/, /func/). Some imaging parameters are inserted based on vendors for future usage. One pair of field maps are selected automatically, but will need manual check for image artifacts or poor localization.
+Convert raw data (*.tgz) to BIDS format (data in subfolders /anat/, /fmap/, /func/). Some imaging parameters are inserted based on vendors for future usage. One pair of field maps are selected automatically, but will need manual check for image artifacts or poor localization. Results will be saved in folder /BIDS with subfolder as sub-*/ses-*. Temporay files will be saved in folder /BIDS_Temp
 ### 2. bids_qc.sh 
-Generate graphs for T1, T2, field map, fMRI images in HTML-based web pages. It supports manual QC labeling (unwanted images with be labeled in red boxes), outputing manual QC results in plain text files (image data names with labels as either pass or fail).
+Generate graphs for T1, T2, field map, fMRI images in HTML-based web pages. It supports manual QC labeling (unwanted images with be labeled in red boxes), outputing manual QC results in plain text files (image data names with labels as either pass or fail). Results will be saved in folder /BIDS_QC. Manual QC results can be saved in the /BIDS_QC replacing automatically generated files.
 ### 3. fmriprep.sh 
-Run fmriprep on BIDS formatted data with or without manual QC files. 
+Run fmriprep on BIDS formatted MRI data with or without manual QC files. This step will perform a widely used fMRI preprocessing including slicing timing, distortion correction, motion correction, brain segmentation, and image registration. Results will be saved in folder /fmriprep, and temporary files will be saved in /fmriprep_work.
 ### 4. xcpd.sh 
-Postprocess fMRI data to remove noises.
+Postprocess fMRI data to remove noises, including spatial smoothing, nuisance regression, temporal filtering. To get results in both NIFTI and CIFTI formats, two folders will be created (/xcpd and /xcpd_cifti). Temporary files will be saved into folder /xcpd_temp
 ### 5. collect.sh 
-collect HTML-based reports from fmriprep and xcpd, as well as final preprocessed data.
+collect HTML-based reports from fmriprep and xcpd, as well as final preprocessed data. Results will be saved into folder /Result.
 
 ## Other Tools Included
 ### abcd-dicom2bids 
